@@ -31,6 +31,8 @@
             .attr('fill', '#dcb')
             .attr('fill-opacity', 1);
 
+        // If a scale has not been specified for a dimension, we
+        // should build a default linear scale with min and max
 
         _.each(this.scales, function (s, dim) {
             this.d3Scales[dim] = s.d3Scale.domain([s.min, s.max]).range(this.rangeForDim(dim));
@@ -82,6 +84,26 @@
             .attr('stroke-width', 2);
     }
 
+    function IntervalElement () {
+        return this;
+    }
+
+    IntervalElement.prototype.render = function (graph, data) {
+        var that = this;
+
+        var rect = graph.svg.selectAll('rect')
+            .data(data)
+            .enter()
+            .append('rect')
+            .attr('x', function (d) { return graph.d3Scales[1](that.xFn(d)) - 2.5; })
+            .attr('width', 5)
+            .attr('y', function (d) { return graph.d3Scales[2](that.yFn(d)); })
+            .attr('height', function (d) { return graph.d3Scales[2](graph.scales[2].min) - graph.d3Scales[2](that.yFn(d)); });
+    };
+
+
+    // Scales
+
     function LinearScale () {
         this.d3Scale = d3.scale.linear();
         return this;
@@ -102,6 +124,8 @@
     function point () { return build(PointElement, arguments); }
 
     function line () { return build(LineElement, arguments); }
+
+    function interval () { return build(IntervalElement, arguments); }
 
     // Scales
 
@@ -183,7 +207,7 @@
         return data;
     }());
 
-    // Generate some random data.
+    // Generate some random data for plotting semi-log.
     var semiLogData = (function () {
         var data = [];
         var x = 0;
@@ -231,18 +255,28 @@
         var yMin = yMinFn(data);
         var yMax = yMaxFn(data);
 
+        // scatterplot
         graph(size(250, 150))
             .element(point(position('d*r')))
             .scale(linear(dim(1), min(xMin), max(xMax)))
             .scale(linear(dim(2), min(yMin), max(yMax)))
             .render(ex(), data);
 
+        // line chart
         graph(size(250, 150))
             .element(line(position('d*r')))
             .scale(linear(dim(1), min(xMin), max(xMax)))
             .scale(linear(dim(2), min(yMin), max(yMax)))
             .render(ex(), data);
 
+        // bar chart
+        graph(size(250, 150))
+            .element(interval(position('d*r')))
+            .scale(linear(dim(1), min(xMin), max(xMax)))
+            .scale(linear(dim(2), min(yMin), max(yMax)))
+            .render(ex(), data);
+
+        // combined points and line
         graph(size(250, 150))
             .element(point(position('d*r')))
             .element(line(position('d*r')))
@@ -250,14 +284,13 @@
             .scale(linear(dim(2), min(yMin), max(yMax)))
             .render(ex(), data);
 
+        // semi-log scale
         graph(size(250, 150))
             .element(point(position('d*r')))
             .element(line(position('d*r')))
             .scale(linear(dim(1), min(xMinFn(semiLogData)), max(xMaxFn(semiLogData))))
             .scale(log(dim(2), min(yMinFn(semiLogData)), max(yMaxFn(semiLogData))))
             .render(ex(), semiLogData);
-
-
 
     });
 
