@@ -59,8 +59,8 @@
 
     function position(expr) {
         return function (e) {
-            e.xFn = function (d) { return Math.random() * 200; }
-            e.yFn = function (d) { return Math.random() * 300; }
+            e.xFn = function (d) { return d.d; }
+            e.yFn = function (d) { return d.r; }
         }
     }
 
@@ -73,12 +73,13 @@
         return obj;
     }
 
-    var data = [
-        { d: 10, r: 20 },
-        { d: 12, r: 30 },
-        { d: 20, r: 6 },
-    ];
-
+    // Generate some random data.
+    var data = _.map(_.range(20), function () {
+        return {
+            d: Math.random() * 500,
+            r: Math.random() * 300
+        }
+    });
 
     $(document).ready(function() {
         var g = graph(size('500px', '300px'));
