@@ -7,6 +7,16 @@
         return this;
     }
 
+    Graph.prototype.rangeForDim = function (dim) {
+        if (dim == 1) {
+            return [0, this.width];
+        } else if (dim == 2) {
+            return [this.height, 0];
+        } else {
+            throw 'Only 2d graphics supported: Bad dim: ' + dim;
+        }
+    };
+
     Graph.prototype.render = function (id, data) {
         // Render the graph using the given data into the div with the given id.
         this.svg = d3.select(id).append('svg')
@@ -21,22 +31,24 @@
             .attr('fill', '#dcb')
             .attr('fill-opacity', 1);
 
-        this.d3Scales[1] = this.scales[1].d3Scale().range([0, this.width]);
-        this.d3Scales[2] = this.scales[2].d3Scale().range([this.height, 0]);
 
-        _.each(this.elements, function (e) { e.render(this, data); }, this)
-    }
+        _.each(this.scales, function (s, dim) {
+            this.d3Scales[dim] = s.d3Scale.domain([s.min, s.max]).range(this.rangeForDim(dim));
+        }, this);
+
+        _.each(this.elements, function (e) { e.render(this, data); }, this);
+    };
 
 
     Graph.prototype.element = function (e) {
         this.elements.push(e);
         return this;
-    }
+    };
 
     Graph.prototype.scale = function (s) {
         this.scales[s.dim] = s;
         return this;
-    }
+    };
 
     function PointElement () {
         this.rFn = function (d) { return 5; };
@@ -52,7 +64,7 @@
             .attr('cx', function (d) { return graph.d3Scales[1](that.xFn(d)) })
             .attr('cy', function (d) { return graph.d3Scales[2](that.yFn(d)) })
             .attr('r', this.rFn);
-    }
+    };
 
     function LineElement () {
         return this;
@@ -70,16 +82,14 @@
             .attr('stroke-width', 2);
     }
 
-    function LinearScale () { return this; }
-
-    LinearScale.prototype.d3Scale = function () {
-        return d3.scale.linear().domain([this.min, this.max]);
+    function LinearScale () {
+        this.d3Scale = d3.scale.linear();
+        return this;
     }
 
-    function LogScale () { return this; }
-
-    LogScale.prototype.d3Scale = function () {
-        return d3.scale.log().domain([this.min, this.max]);
+    function LogScale () {
+        this.d3Scale = d3.scale.log();
+        return this;
     }
 
     ////////////////////////////////////////////////////////////////////////
