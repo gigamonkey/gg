@@ -140,14 +140,20 @@
     }());
 
     $(document).ready(function() {
-        graph(size(500, 300)).element(point(position('d*r'))).render('#example1', data);
-        graph(size(500, 300)).element(line(position('d*r'))).render('#example2', data);
 
-        graph(size(500, 300))
+        function ex (n) {
+            var id = 'example' + n;
+            d3.select('body').append('div').attr('id', id);
+            return '#' + id;
+        }
+
+        graph(size(250, 150)).element(point(position('d*r'))).render(ex(1), data);
+        graph(size(250, 150)).element(line(position('d*r'))).render(ex(2), data);
+
+        graph(size(250, 150))
             .element(point(position('d*r')))
             .element(line(position('d*r')))
-            .render('#example3', data);
-
+            .render(ex(3), data);
     });
 
 })();
