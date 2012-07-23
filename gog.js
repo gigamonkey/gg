@@ -30,6 +30,7 @@
 
     Graph.prototype.element = function (e) {
         this.elements.push(e);
+        return this;
     }
 
     function PointElement () {
@@ -45,6 +46,18 @@
             .attr('cx', this.xFn)
             .attr('cy', this.yFn)
             .attr('r', this.rFn);
+    }
+
+    function LineElement () {
+        return this;
+    }
+
+    LineElement.prototype.render = function (svg, data) {
+        var polyline = svg.append('polyline')
+            .attr('points', _.map(data, function (d) { return this.xFn(d) + ',' + this.yFn(d); }, this).join(' '))
+            .attr('fill', 'none')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 2);
     }
 
     // Make a graph
@@ -83,23 +96,34 @@
         return applyArguments(arguments, new PointElement());
     }
 
+    function line () {
+        return applyArguments(arguments, new LineElement());
+    }
+
     function applyArguments (args, obj) {
         _.each(args, function (fn) { fn(obj); });
         return obj;
     }
 
     // Generate some random data.
-    var data = _.map(_.range(20), function () {
-        return {
-            d: Math.random() * 500,
-            r: Math.random() * 300
-        }
-    });
+    var data = (function () {
+        var data = [];
+        var x = 0;
+        var y = 0;
+        _.times(20, function () {
+            x += Math.random() * 30;
+            y += Math.random() * 30;
+            data.push({
+                d: x,
+                r: y,
+            });
+        });
+        return data;
+    }());
 
     $(document).ready(function() {
-        var g = graph(size('500px', '300px'));
-        g.element(point(position('d*r')));
-        g.render('#g1', data);
+        graph(size('500px', '300px')).element(point(position('d*r'))).render('#example1', data);
+        graph(size('500px', '300px')).element(line(position('d*r'))).render('#example2', data);
     });
 
 })();
