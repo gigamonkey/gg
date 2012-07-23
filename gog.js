@@ -6,11 +6,6 @@
         return this;
     }
 
-    Graph.prototype.setSize = function (width, height) {
-        this.width  = width;
-        this.height = height;
-    }
-
     Graph.prototype.render = function (id, data) {
         // Render the graph using the given data into the div with the given id.
         this.svg = d3.select(id).append('svg')
@@ -22,7 +17,7 @@
             .attr('y', 0)
             .attr('width', this.width)
             .attr('height', this.height)
-            .attr('fill', '#aaa')
+            .attr('fill', '#dcb')
             .attr('fill-opacity', 1);
 
         var xMin = _.min(data, function (d) { return d.d; }).d;
@@ -43,7 +38,7 @@
     }
 
     function PointElement () {
-        this.rFn = function (d) { return 10; };
+        this.rFn = function (d) { return 5; };
         return this;
     }
 
@@ -74,14 +69,23 @@
             .attr('stroke-width', 2);
     }
 
-    // Make a graph
-    function graph() {
-        return applyArguments(arguments, new Graph());
-    }
 
-    // Set the size of a graph.
+
+    ////////////////////////////////////////////////////////////////////////
+    /// API
+
+    function graph() { return build(Graph, arguments); }
+
+    function point () { return build(PointElement, arguments); }
+
+    function line () { return build(LineElement, arguments); }
+
+   // Set the size of a graph.
     function size(w, h) {
-        return function (g) { g.setSize(w, h); }
+        return function (g) {
+            g.width = w;
+            g.height = h;
+        }
     }
 
     function position(expr) {
@@ -106,15 +110,15 @@
         }
     }
 
-    function point () {
-        return applyArguments(arguments, new PointElement());
-    }
 
-    function line () {
-        return applyArguments(arguments, new LineElement());
-    }
 
-    function applyArguments (args, obj) {
+    ////////////////////////////////////////////////////////////////////////
+    /// Internals
+
+    // This is a kind of goofy way to do things but it enables us to
+    // follow the Graphics Production Language pretty closely.
+    function build (fn, args) {
+        var obj = new fn();
         _.each(args, function (fn) { fn(obj); });
         return obj;
     }
@@ -126,7 +130,7 @@
         var y = 0;
         _.times(20, function () {
             x += Math.random() * 30;
-            y += 20  - Math.random() * 30;
+            y += 20 - Math.random() * 30;
             data.push({
                 d: x,
                 r: y,
@@ -136,8 +140,14 @@
     }());
 
     $(document).ready(function() {
-        graph(size('500', '300')).element(point(position('d*r'))).render('#example1', data);
-        graph(size('500', '300')).element(line(position('d*r'))).render('#example2', data);
+        graph(size(500, 300)).element(point(position('d*r'))).render('#example1', data);
+        graph(size(500, 300)).element(line(position('d*r'))).render('#example2', data);
+
+        graph(size(500, 300))
+            .element(point(position('d*r')))
+            .element(line(position('d*r')))
+            .render('#example3', data);
+
     });
 
 })();
