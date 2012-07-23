@@ -58,9 +58,24 @@
     }
 
     function position(expr) {
+        var parse = expr.split(/([*\/+])/);
+        var operands = [];
+        var operators = [];
+        _.each(parse, function (e, i) {
+            if (i % 2 == 0) {
+                operands.push(e);
+            } else {
+                operators.push(e);
+            }
+        });
+
+        if (_.any(operators, function (op) { return op !== '*'; })) {
+            throw "/ and + not implemented.";
+        }
+
         return function (e) {
-            e.xFn = function (d) { return d.d; }
-            e.yFn = function (d) { return d.r; }
+            e.xFn = function (d) { return d[operands[0]]; }
+            e.yFn = function (d) { return d[operands[1]]; }
         }
     }
 
