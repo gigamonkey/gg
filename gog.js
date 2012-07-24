@@ -17,6 +17,26 @@
         }
     };
 
+    Graph.prototype.xMin = function (data) {
+        var e = this.elements[0];
+        return e.xFn(_.min(data, function (d) { return e.xFn(d); }));
+    };
+
+    Graph.prototype.xMax = function (data) {
+        var e = this.elements[0];
+        return e.xFn(_.max(data, function (d) { return e.xFn(d); }));
+    };
+
+    Graph.prototype.yMin = function (data) {
+        var e = this.elements[0];
+        return e.yFn(_.min(data, function (d) { return e.yFn(d); }));
+    };
+
+    Graph.prototype.yMax = function (data) {
+        var e = this.elements[0];
+        return e.yFn(_.max(data, function (d) { return e.yFn(d); }));
+    };
+
     Graph.prototype.render = function (id, data) {
         // Render the graph using the given data into the div with the given id.
         this.svg = d3.select(id).append('svg')
@@ -31,10 +51,19 @@
             .attr('fill', '#dcb')
             .attr('fill-opacity', 1);
 
-        // If a scale has not been specified for a dimension, we
-        // should build a default linear scale with min and max
+        // Default to linear scales if not supplied.
+        for (var i = 1; i < 3; i++) {
+            if (typeof this.scales[i] === 'undefined') {
+                this.scale(linear(dim(i)))
+            }
+        }
 
+        // Default the scale's domains if they are not supplied.
         _.each(this.scales, function (s, dim) {
+            if (typeof s.min === 'undefined') {
+                s.min = (dim == 1) ? this.xMin(data) : this.yMin(data);
+                s.max = (dim == 1) ? this.xMax(data) : this.yMax(data);
+            }
             this.d3Scales[dim] = s.d3Scale.domain([s.min, s.max]).range(this.rangeForDim(dim));
         }, this);
 
@@ -68,9 +97,7 @@
             .attr('r', this.rFn);
     };
 
-    function LineElement () {
-        return this;
-    }
+    function LineElement () { return this; }
 
     LineElement.prototype.render = function (graph, data) {
         var e = this;
@@ -84,9 +111,7 @@
             .attr('stroke-width', 2);
     }
 
-    function IntervalElement () {
-        return this;
-    }
+    function IntervalElement () { return this; }
 
     IntervalElement.prototype.render = function (graph, data) {
         var that = this;
@@ -178,8 +203,6 @@
         }
     }
 
-
-
     ////////////////////////////////////////////////////////////////////////
     /// Internals
 
@@ -234,62 +257,28 @@
             return '#' + id;
         }
 
-        function xMinFn (data) {
-            return _.min(data, function (d) { return d.d; }).d;
-        }
-
-        function xMaxFn (data) {
-            return _.max(data, function (d) { return d.d; }).d;
-        }
-
-        function yMinFn (data) {
-            return _.min(data, function (d) { return d.r; }).r;
-        }
-
-        function yMaxFn (data) {
-            return _.max(data, function (d) { return d.r; }).r;
-        }
-
-        var xMin = xMinFn(data);
-        var xMax = xMaxFn(data);
-        var yMin = yMinFn(data);
-        var yMax = yMaxFn(data);
+        var s = size(250, 150);
 
         // scatterplot
-        graph(size(250, 150))
-            .element(point(position('d*r')))
-            .scale(linear(dim(1), min(xMin), max(xMax)))
-            .scale(linear(dim(2), min(yMin), max(yMax)))
-            .render(ex(), data);
+        graph(s).element(point(position('d*r'))).render(ex(), data);
 
         // line chart
-        graph(size(250, 150))
-            .element(line(position('d*r')))
-            .scale(linear(dim(1), min(xMin), max(xMax)))
-            .scale(linear(dim(2), min(yMin), max(yMax)))
-            .render(ex(), data);
+        graph(s).element(line(position('d*r'))).render(ex(), data);
 
         // bar chart
-        graph(size(250, 150))
-            .element(interval(position('d*r')))
-            .scale(linear(dim(1), min(xMin), max(xMax)))
-            .scale(linear(dim(2), min(yMin), max(yMax)))
-            .render(ex(), data);
+        graph(s).element(interval(position('d*r'))).render(ex(), data);
 
         // combined points and line
-        graph(size(250, 150))
+        graph(s)
             .element(point(position('d*r')))
             .element(line(position('d*r')))
-            .scale(linear(dim(1), min(xMin), max(xMax)))
-            .scale(linear(dim(2), min(yMin), max(yMax)))
             .render(ex(), data);
 
         // semi-log scale
-        graph(size(250, 150))
+        graph(s)
             .element(point(position('d*r')))
             .element(line(position('d*r')))
-            .scale(linear(dim(1), min(xMinFn(semiLogData)), max(xMaxFn(semiLogData))))
-            .scale(log(dim(2), min(yMinFn(semiLogData)), max(yMaxFn(semiLogData))))
+            .scale(log(dim(2)))
             .render(ex(), semiLogData);
 
     });
