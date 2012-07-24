@@ -33,15 +33,13 @@
     };
 
     Graphic.prototype.dataMin = function (data, aesthetic) {
-        var e = this.layers[0];
-        function key (d) { return e.dataValue(d, aesthetic); }
-        return e.dataValue(_.min(data, key), aesthetic);
+        function key (x) { return x.dataMin(data, aesthetic); }
+        return key(_.min(this.layers, key));
     }
 
     Graphic.prototype.dataMax = function (data, aesthetic) {
-        var e = this.layers[0];
-        function key (d) { return e.dataValue(d, aesthetic); }
-        return e.dataValue(_.max(data, key), aesthetic);
+        function key (x) { return x.dataMax(data, aesthetic); }
+        return key(_.max(this.layers, key));
     }
 
     Graphic.prototype.render = function (where, data) {
@@ -111,6 +109,18 @@
     Layer.prototype.dataValue = function (datum, aesthetic) {
         return datum[this.mappings[aesthetic]];
     };
+
+    Layer.prototype.dataMin = function (data, aesthetic) {
+        var e = this;
+        function key (d) { return e.dataValue(d, aesthetic); }
+        return e.dataValue(_.min(data, key), aesthetic);
+    }
+
+    Layer.prototype.dataMax = function (data, aesthetic) {
+        var e = this;
+        function key (d) { return e.dataValue(d, aesthetic); }
+        return e.dataValue(_.max(data, key), aesthetic);
+    }
 
     function Geometry () { return this; }
 
