@@ -18,7 +18,7 @@
         return this.scales['y'].scale(layer.dataValue(d, 'y'));
     }
 
-    Graphic.prototype.newYMin = function () {
+    Graphic.prototype.yMin = function () {
         return this.scales['y'].scale(this.scales['y']._min)
     }
 
@@ -162,7 +162,7 @@
             .attr('x', function (d) { return graph.x(d, layer) - 2.5; })
             .attr('y', function (d) { return graph.y(d, layer); })
             .attr('width', 5)
-            .attr('height', function (d) { return graph.newYMin() - graph.y(d, layer); });
+            .attr('height', function (d) { return graph.yMin() - graph.y(d, layer); });
     };
 
     ////////////////////////////////////////////////////////////////////////
