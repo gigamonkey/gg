@@ -9,9 +9,9 @@
 
     Graph.prototype.rangeForDim = function (dim) {
         if (dim == 1) {
-            return [0, this.width];
+            return [10, this.width - 20];
         } else if (dim == 2) {
-            return [this.height, 0];
+            return [this.height - 20, 10];
         } else {
             throw 'Only 2d graphics supported: Bad dim: ' + dim;
         }
@@ -60,16 +60,21 @@
 
         // Default the scale's domains if they are not supplied.
         _.each(this.scales, function (s, dim) {
-            if (typeof s.min === 'undefined') {
-                s.min = (dim == 1) ? this.xMin(data) : this.yMin(data);
-                s.max = (dim == 1) ? this.xMax(data) : this.yMax(data);
+            if (! s.domainSet) {
+                if (typeof s.min === 'undefined') {
+                    s.min = (dim == 1) ? this.xMin(data) : this.yMin(data);
+                }
+                if (typeof s.max === 'undefined') {
+                    s.max = (dim == 1) ? this.xMax(data) : this.yMax(data);
+                }
+                this.d3Scales[dim] = s.d3Scale.domain([s.min, s.max]).range(this.rangeForDim(dim));
+            } else {
+                this.d3Scales[dim] = s.d3Scale.rangeBands(this.rangeForDim(dim), .5);
             }
-            this.d3Scales[dim] = s.d3Scale.domain([s.min, s.max]).range(this.rangeForDim(dim));
         }, this);
 
         _.each(this.elements, function (e) { e.render(this, data); }, this);
     };
-
 
     Graph.prototype.element = function (e) {
         this.elements.push(e);
@@ -88,7 +93,7 @@
 
     PointElement.prototype.render = function (graph, data) {
         var that = this;
-        var circle = graph.svg.selectAll('circle')
+        var circle = graph.svg.append('g').selectAll('circle')
             .data(data)
             .enter()
             .append('circle')
@@ -115,8 +120,7 @@
 
     IntervalElement.prototype.render = function (graph, data) {
         var that = this;
-
-        var rect = graph.svg.selectAll('rect')
+        var rect = graph.svg.append('g').selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
@@ -125,7 +129,6 @@
             .attr('y', function (d) { return graph.d3Scales[2](that.yFn(d)); })
             .attr('height', function (d) { return graph.d3Scales[2](graph.scales[2].min) - graph.d3Scales[2](that.yFn(d)); });
     };
-
 
     // Scales
 
@@ -139,10 +142,15 @@
         return this;
     }
 
+    function CategoricalScale () {
+        this.d3Scale = d3.scale.ordinal();
+        return this;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     /// API
 
-    function graph() { return build(Graph, arguments); }
+    function graph () { return build(Graph, arguments); }
 
     // Elements
 
@@ -158,6 +166,8 @@
 
     function log () { return build(LogScale, arguments); }
 
+    function cat () { return build(CategoricalScale, arguments); }
+
    // Set the size of a graph.
     function size(w, h) {
         return function (g) {
@@ -169,6 +179,14 @@
     // Set the dimension of a scale.
     function dim (v) {
         return function (scale) { scale.dim = v; }
+    }
+
+    function values () {
+        var d = arguments;
+        return function (scale) {
+            scale.domainSet = true;
+            scale.d3Scale.domain(d);
+        }
     }
 
     // Set the minimum value of a scale.
@@ -208,8 +226,8 @@
 
     // This is a kind of goofy way to do things but it enables us to
     // follow the Graphics Production Language pretty closely.
-    function build (fn, args) {
-        var obj = new fn();
+    function build (constructor, args) {
+        var obj = new constructor();
         _.each(args, function (fn) { fn(obj); });
         return obj;
     }
@@ -247,6 +265,14 @@
     }());
 
 
+    // Some categorical data
+    var categoricalData = [
+        { category: 'foo', count: 100 },
+        { category: 'bar', count: 59 },
+        { category: 'baz', count: 212 },
+        { category: 'quux', count: 76 }
+    ];
+
 
     $(document).ready(function() {
 
@@ -267,6 +293,15 @@
 
         // bar chart
         graph(s).element(interval(position('d*r'))).render(ex(), data);
+
+        // histogram
+        graph(s)
+            .element(interval(position('category*count')))
+            .scale(cat(dim(1), values('foo', 'bar', 'baz', 'quux')))
+            .scale(linear(dim(2), min(0)))
+            .render(ex(), categoricalData);
+
+
 
         // combined points and line
         graph(s)
