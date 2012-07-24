@@ -2,6 +2,9 @@ body {
     font-family: "Gill Sans";
     margin: .25in .5in;
 }
+
 h1 {
     font-weight: 300;
 }
+
+.graphic { margin: 3px; }

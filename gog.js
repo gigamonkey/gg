@@ -279,7 +279,7 @@
         var n = 0;
         function ex () {
             var id = 'example' + n++;
-            d3.select('body').append('div').attr('id', id);
+            d3.select('body').append('span').attr('class', 'graphic').attr('id', id);
             return '#' + id;
         }
 
