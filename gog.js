@@ -2,9 +2,11 @@
 
     var _undefined;
 
+    function identity (x) { return x; }
+
     function Graphic () {
-        this.elements = [];
-        this.scales   = {};
+        this.layers = [];
+        this.scales = {};
         return this;
     }
 
@@ -19,22 +21,22 @@
     };
 
     Graphic.prototype.xMin = function (data) {
-        var e = this.elements[0];
+        var e = this.layers[0].geometry;
         return e.xFn(_.min(data, function (d) { return e.xFn(d); }));
     };
 
     Graphic.prototype.xMax = function (data) {
-        var e = this.elements[0];
+        var e = this.layers[0].geometry;
         return e.xFn(_.max(data, function (d) { return e.xFn(d); }));
     };
 
     Graphic.prototype.yMin = function (data) {
-        var e = this.elements[0];
+        var e = this.layers[0].geometry;
         return e.yFn(_.min(data, function (d) { return e.yFn(d); }));
     };
 
     Graphic.prototype.yMax = function (data) {
-        var e = this.elements[0];
+        var e = this.layers[0].geometry;
         return e.yFn(_.max(data, function (d) { return e.yFn(d); }));
     };
 
@@ -46,7 +48,7 @@
 
     Graphic.prototype.render = function (where, data) {
         // Render the graph using the given data into the given
-        // element (a div or span usually).
+        // HTML element (a div or span usually).
         this.svg = where.append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -80,11 +82,11 @@
             s.range(this.rangeFor(dim));
         }, this);
 
-        _.each(this.elements, function (e) { e.render(this, data); }, this);
+        _.each(this.layers, function (e) { e.render(this, data); }, this);
     };
 
-    Graphic.prototype.element = function (e) {
-        this.elements.push(e);
+    Graphic.prototype.layer = function (e) {
+        this.layers.push(e);
         return this;
     };
 
@@ -93,9 +95,22 @@
         return this;
     };
 
-    function Element () { return this; }
+    function Layer (geometry) {
+        this.geometry = geometry;
+        this.statistic  = identity;
+        this.positioner = null;
+        this.data       = null;
+        this.mappings   = {};
+        return this;
+    }
 
-    Element.prototype.position = function (expr) {
+    Layer.prototype.render = function (graph, data) {
+        this.geometry.render(graph, data);
+    }
+
+    function Geometry () { return this; }
+
+    Geometry.prototype.position = function (expr) {
         var parse = expr.split(/([*\/+])/);
         var operands = [];
         var operators = [];
@@ -117,14 +132,14 @@
     }
 
 
-    function PointElement () {
+    function PointGeometry () {
         this.rFn = function (d) { return 5; };
         return this;
     }
 
-    PointElement.prototype = new Element();
+    PointGeometry.prototype = new Geometry();
 
-    PointElement.prototype.render = function (graph, data) {
+    PointGeometry.prototype.render = function (graph, data) {
         var that = this;
         var circle = graph.svg.append('g').selectAll('circle')
             .data(data)
@@ -135,11 +150,11 @@
             .attr('r', this.rFn);
     };
 
-    function LineElement () { return this; }
+    function LineGeometry () { return this; }
 
-    LineElement.prototype = new Element();
+    LineGeometry.prototype = new Geometry();
 
-    LineElement.prototype.render = function (graph, data) {
+    LineGeometry.prototype.render = function (graph, data) {
         var e = this;
         function x (d) { return graph.scales['x'].scale(e.xFn(d)); }
         function y (d) { return graph.scales['y'].scale(e.yFn(d)); }
@@ -151,11 +166,11 @@
             .attr('stroke-width', 2);
     }
 
-    function IntervalElement () { return this; }
+    function IntervalGeometry () { return this; }
 
-    IntervalElement.prototype = new Element();
+    IntervalGeometry.prototype = new Geometry();
 
-    IntervalElement.prototype.render = function (graph, data) {
+    IntervalGeometry.prototype.render = function (graph, data) {
         var that = this;
         var rect = graph.svg.append('g').selectAll('rect')
             .data(data)
@@ -234,15 +249,15 @@
         return this;
     }
 
-    function makeElement (spec) {
-        var elementClasses = {
-            point: PointElement,
-            line: LineElement,
-            interval: IntervalElement,
+    function makeLayer (spec) {
+        var geometryClasses = {
+            point: PointGeometry,
+            line: LineGeometry,
+            interval: IntervalGeometry,
         };
-        var e = new elementClasses[spec.geometry || 'point'];
-        spec.position !== _undefined && e.position(spec.position);
-        return e;
+        var geometry = new geometryClasses[spec.geometry || 'point'];
+        spec.position !== _undefined && geometry.position(spec.position);
+        return new Layer(geometry);
     }
 
     function makeScale (spec) {
@@ -266,7 +281,7 @@
         var g = new Graphic();
         g.width = spec.width;
         g.height = spec.height;
-        _.each(spec.elements, function (e) { g.element(makeElement(e)); });
+        _.each(spec.layers, function (e) { g.layer(makeLayer(e)); });
         _.each(spec.scales, function (s) { g.scale(makeScale(s)); });
         return g;
     }
@@ -329,25 +344,25 @@
         var scatterplot = gg({
             width: w,
             height: h,
-            elements: [{ geometry: 'point', position: 'd*r' }]
+            layers: [{ geometry: 'point', position: 'd*r' }]
         });
 
         var linechart = gg({
             width: w,
             height: h,
-            elements: [{ geometry: 'line', position: 'd*r' }]
+            layers: [{ geometry: 'line', position: 'd*r' }]
         });
 
         var barchart = gg({
             width: w,
             height: h,
-            elements: [{ geometry: 'interval', position: 'd*r' }]
+            layers: [{ geometry: 'interval', position: 'd*r' }]
         });
 
         var histogram = gg({
             width: w,
             height: h,
-            elements: [{ geometry: 'interval', position: 'category*count' }],
+            layers: [{ geometry: 'interval', position: 'category*count' }],
             scales: [
                 { type: 'categorical', dim: 'x', values: ['foo', 'bar', 'baz', 'quux'] },
                 { type: 'linear', dim: 'y', min: 0 }
@@ -357,7 +372,7 @@
         var combined_points_and_line = gg({
             width: w,
             height: h,
-            elements: [
+            layers: [
                 { geometry: 'point', position: 'd*r' },
                 { geometry: 'line', position: 'd*r' },
             ],
@@ -366,7 +381,7 @@
         var semi_log_scale = gg({
             width: w,
             height: h,
-            elements: [
+            layers: [
                 { geometry: 'point', position: 'd*r' },
                 { geometry: 'line', position: 'd*r' },
             ],
