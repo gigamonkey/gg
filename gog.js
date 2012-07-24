@@ -110,27 +110,13 @@
 
     function Geometry () { return this; }
 
-    Geometry.prototype.position = function (expr) {
-        var parse = expr.split(/([*\/+])/);
-        var operands = [];
-        var operators = [];
-        _.each(parse, function (e, i) {
-            if (i % 2 == 0) {
-                operands.push(e);
-            } else {
-                operators.push(e);
-            }
-        });
+    Geometry.prototype.xFn = function (d) {
+        return d[this.layer.mappings['x']];
+    };
 
-        if (_.any(operators, function (op) { return op !== '*'; })) {
-            throw "/ and + not implemented.";
-        }
-
-        this.xFn = function (d) { return d[operands[0]]; }
-        this.yFn = function (d) { return d[operands[1]]; }
-        return this;
-    }
-
+    Geometry.prototype.yFn = function (d) {
+        return d[this.layer.mappings['y']];
+    };
 
     function PointGeometry () {
         this.rFn = function (d) { return 5; };
@@ -250,23 +236,25 @@
     }
 
     function makeLayer (spec) {
-        var geometryClasses = {
+        var geometry = new {
             point: PointGeometry,
             line: LineGeometry,
             interval: IntervalGeometry,
-        };
-        var geometry = new geometryClasses[spec.geometry || 'point'];
-        spec.position !== _undefined && geometry.position(spec.position);
-        return new Layer(geometry);
+        }[spec.geometry || 'point'];
+
+        var layer = new Layer(geometry);
+        geometry.layer = layer;
+        spec.mapping !== _undefined && (layer.mappings = spec.mapping);
+        return layer;
     }
 
     function makeScale (spec) {
-        var scaleClasses = {
+        var s = new {
             linear: LinearScale,
             log: LogScale,
             categorical: CategoricalScale,
-        };
-        var s = new scaleClasses[spec.type || 'linear'];
+        }[spec.type || 'linear'];
+
         spec.dim !== _undefined && s.dim(spec.dim);
         spec.values !== _undefined && s.values(spec.values);
         spec.min !== _undefined && s.min(spec.min);
@@ -344,25 +332,25 @@
         var scatterplot = gg({
             width: w,
             height: h,
-            layers: [{ geometry: 'point', position: 'd*r' }]
+            layers: [{ geometry: 'point', mapping: { x: 'd', y: 'r' } }]
         });
 
         var linechart = gg({
             width: w,
             height: h,
-            layers: [{ geometry: 'line', position: 'd*r' }]
+            layers: [{ geometry: 'line', mapping: { x: 'd', y: 'r' } }]
         });
 
         var barchart = gg({
             width: w,
             height: h,
-            layers: [{ geometry: 'interval', position: 'd*r' }]
+            layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' } }]
         });
 
         var histogram = gg({
             width: w,
             height: h,
-            layers: [{ geometry: 'interval', position: 'category*count' }],
+            layers: [{ geometry: 'interval', mapping: { x: 'category', y: 'count' } }],
             scales: [
                 { type: 'categorical', dim: 'x', values: ['foo', 'bar', 'baz', 'quux'] },
                 { type: 'linear', dim: 'y', min: 0 }
@@ -373,8 +361,8 @@
             width: w,
             height: h,
             layers: [
-                { geometry: 'point', position: 'd*r' },
-                { geometry: 'line', position: 'd*r' },
+                { geometry: 'point', mapping: { x: 'd', y: 'r' } },
+                { geometry: 'line', mapping: { x: 'd', y: 'r' } },
             ],
         });
 
@@ -382,8 +370,8 @@
             width: w,
             height: h,
             layers: [
-                { geometry: 'point', position: 'd*r' },
-                { geometry: 'line', position: 'd*r' },
+                { geometry: 'point', mapping: { x: 'd', y: 'r' } },
+                { geometry: 'line', mapping: { x: 'd', y: 'r' } },
             ],
             scales: [ { type: 'log', dim: 'y' } ]
         });
