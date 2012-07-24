@@ -9,9 +9,9 @@
     }
 
     Graphic.prototype.rangeFor = function (dim) {
-        if (dim == 1) {
+        if (dim === 'x') {
             return [10, this.width - 20];
-        } else if (dim == 2) {
+        } else if (dim === 'y') {
             return [this.height - 20, 10];
         } else {
             throw 'Only 2d graphics supported: Bad dim: ' + dim;
@@ -60,20 +60,20 @@
             .attr('fill-opacity', 1);
 
         // Default to linear scales if not supplied.
-        for (var i = 1; i < 3; i++) {
-            if (typeof this.scales[i] === 'undefined') {
-                this.scale(new LinearScale().dim(i));
+        _.each(['x', 'y'], function (dim) {
+            if (this.scales[dim] === _undefined) {
+                this.scale(new LinearScale().dim(dim));
             }
-        }
+        }, this);
 
         // Default the scale's domains if they are not supplied.
         _.each(this.scales, function (s, dim) {
             if (! s.domainSet) {
                 if (s._min === _undefined) {
-                    s._min = (dim == 1) ? this.xMin(data) : this.yMin(data);
+                    s._min = (dim === 'x') ? this.xMin(data) : this.yMin(data);
                 }
                 if (s._max === _undefined) {
-                    s._max = (dim == 1) ? this.xMax(data) : this.yMax(data);
+                    s._max = (dim === 'x') ? this.xMax(data) : this.yMax(data);
                 }
                 s.domain([s._min, s._max]);
             }
@@ -130,8 +130,8 @@
             .data(data)
             .enter()
             .append('circle')
-            .attr('cx', function (d) { return graph.scales[1].scale(that.xFn(d)) })
-            .attr('cy', function (d) { return graph.scales[2].scale(that.yFn(d)) })
+            .attr('cx', function (d) { return graph.scales['x'].scale(that.xFn(d)) })
+            .attr('cy', function (d) { return graph.scales['y'].scale(that.yFn(d)) })
             .attr('r', this.rFn);
     };
 
@@ -141,8 +141,8 @@
 
     LineElement.prototype.render = function (graph, data) {
         var e = this;
-        function x (d) { return graph.scales[1].scale(e.xFn(d)); }
-        function y (d) { return graph.scales[2].scale(e.yFn(d)); }
+        function x (d) { return graph.scales['x'].scale(e.xFn(d)); }
+        function y (d) { return graph.scales['y'].scale(e.yFn(d)); }
 
         var polyline = graph.svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
@@ -161,10 +161,10 @@
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', function (d) { return graph.scales[1].scale(that.xFn(d)) - 2.5; })
+            .attr('x', function (d) { return graph.scales['x'].scale(that.xFn(d)) - 2.5; })
             .attr('width', 5)
-            .attr('y', function (d) { return graph.scales[2].scale(that.yFn(d)); })
-            .attr('height', function (d) { return graph.scales[2].scale(graph.scales[2]._min) - graph.scales[2].scale(that.yFn(d)); });
+            .attr('y', function (d) { return graph.scales['y'].scale(that.yFn(d)); })
+            .attr('height', function (d) { return graph.scales['y'].scale(graph.scales['y']._min) - graph.scales['y'].scale(that.yFn(d)); });
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -349,8 +349,8 @@
             height: h,
             elements: [{ geometry: 'interval', position: 'category*count' }],
             scales: [
-                { type: 'categorical', dim: 1, values: ['foo', 'bar', 'baz', 'quux'] },
-                { type: 'linear', dim: 2, min: 0 }
+                { type: 'categorical', dim: 'x', values: ['foo', 'bar', 'baz', 'quux'] },
+                { type: 'linear', dim: 'y', min: 0 }
             ]
         });
 
@@ -370,7 +370,7 @@
                 { geometry: 'point', position: 'd*r' },
                 { geometry: 'line', position: 'd*r' },
             ],
-            scales: [ { type: 'log', dim: 2 } ]
+            scales: [ { type: 'log', dim: 'y' } ]
         });
 
         // ... and render 'em
