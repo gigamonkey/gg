@@ -37,9 +37,10 @@
         return e.yFn(_.max(data, function (d) { return e.yFn(d); }));
     };
 
-    Graph.prototype.render = function (id, data) {
-        // Render the graph using the given data into the div with the given id.
-        this.svg = d3.select(id).append('svg')
+    Graph.prototype.render = function (where, data) {
+        // Render the graph using the given data into the given
+        // element (a div or span usually).
+        this.svg = where.append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
 
@@ -276,11 +277,8 @@
 
     $(document).ready(function() {
 
-        var n = 0;
         function ex () {
-            var id = 'example' + n++;
-            d3.select('body').append('span').attr('class', 'graphic').attr('id', id);
-            return '#' + id;
+            return d3.select('#examples').append('span');
         }
 
         var s = size(250, 150);
