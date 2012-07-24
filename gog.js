@@ -37,6 +37,12 @@
         return e.yFn(_.max(data, function (d) { return e.yFn(d); }));
     };
 
+    Graph.prototype.size = function (w, h) {
+        this.width = w;
+        this.height = h;
+        return this;
+    }
+
     Graph.prototype.render = function (where, data) {
         // Render the graph using the given data into the given
         // element (a div or span usually).
@@ -151,8 +157,6 @@
     ////////////////////////////////////////////////////////////////////////
     /// API
 
-    function graph () { return build(Graph, arguments); }
-
     // Elements
 
     function point () { return build(PointElement, arguments); }
@@ -168,14 +172,6 @@
     function log () { return build(LogScale, arguments); }
 
     function cat () { return build(CategoricalScale, arguments); }
-
-   // Set the size of a graph.
-    function size(w, h) {
-        return function (g) {
-            g.width = w;
-            g.height = h;
-        }
-    }
 
     // Set the dimension of a scale.
     function dim (v) {
@@ -277,38 +273,40 @@
 
     $(document).ready(function() {
 
-        function ex () {
-            return d3.select('#examples').append('span');
-        }
+        function ex () { return d3.select('#examples').append('span'); }
 
-        var s = size(250, 150);
+        var w = 250;
+        var h = 150;
+
+        var g = new Graph().size(250, 150);
+        var p = new PointElement();
+        position('d*r')(p);
+        g.element(p).render(ex(), data);
 
         // scatterplot
-        graph(s).element(point(position('d*r'))).render(ex(), data);
+        new Graph().size(w, h).element(point(position('d*r'))).render(ex(), data);
 
         // line chart
-        graph(s).element(line(position('d*r'))).render(ex(), data);
+        new Graph().size(w, h).element(line(position('d*r'))).render(ex(), data);
 
         // bar chart
-        graph(s).element(interval(position('d*r'))).render(ex(), data);
+        new Graph().size(w, h).element(interval(position('d*r'))).render(ex(), data);
 
         // histogram
-        graph(s)
+        new Graph().size(w, h)
             .element(interval(position('category*count')))
             .scale(cat(dim(1), values('foo', 'bar', 'baz', 'quux')))
             .scale(linear(dim(2), min(0)))
             .render(ex(), categoricalData);
 
-
-
         // combined points and line
-        graph(s)
+        new Graph().size(w, h)
             .element(point(position('d*r')))
             .element(line(position('d*r')))
             .render(ex(), data);
 
         // semi-log scale
-        graph(s)
+        new Graph().size(w, h)
             .element(point(position('d*r')))
             .element(line(position('d*r')))
             .scale(log(dim(2)))
