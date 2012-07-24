@@ -5,7 +5,6 @@
     function Graphic () {
         this.elements = [];
         this.scales   = {};
-        this.d3Scales = {};
         return this;
     }
 
@@ -76,9 +75,9 @@
                 if (typeof s._max === 'undefined') {
                     s._max = (dim == 1) ? this.xMax(data) : this.yMax(data);
                 }
-                this.d3Scales[dim] = s.d3Scale.domain([s._min, s._max]).range(this.rangeForDim(dim));
+                s.domain([s._min, s._max]).range(this.rangeForDim(dim));
             } else {
-                this.d3Scales[dim] = s.d3Scale.rangeBands(this.rangeForDim(dim), .5);
+                s.rangeBands(this.rangeForDim(dim), .5);
             }
         }, this);
 
@@ -132,8 +131,8 @@
             .data(data)
             .enter()
             .append('circle')
-            .attr('cx', function (d) { return graph.d3Scales[1](that.xFn(d)) })
-            .attr('cy', function (d) { return graph.d3Scales[2](that.yFn(d)) })
+            .attr('cx', function (d) { return graph.scales[1].scale(that.xFn(d)) })
+            .attr('cy', function (d) { return graph.scales[2].scale(that.yFn(d)) })
             .attr('r', this.rFn);
     };
 
@@ -143,8 +142,8 @@
 
     LineElement.prototype.render = function (graph, data) {
         var e = this;
-        function x (d) { return graph.d3Scales[1](e.xFn(d)); }
-        function y (d) { return graph.d3Scales[2](e.yFn(d)); }
+        function x (d) { return graph.scales[1].scale(e.xFn(d)); }
+        function y (d) { return graph.scales[2].scale(e.yFn(d)); }
 
         var polyline = graph.svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
@@ -163,10 +162,10 @@
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', function (d) { return graph.d3Scales[1](that.xFn(d)) - 2.5; })
+            .attr('x', function (d) { return graph.scales[1].scale(that.xFn(d)) - 2.5; })
             .attr('width', 5)
-            .attr('y', function (d) { return graph.d3Scales[2](that.yFn(d)); })
-            .attr('height', function (d) { return graph.d3Scales[2](graph.scales[2]._min) - graph.d3Scales[2](that.yFn(d)); });
+            .attr('y', function (d) { return graph.scales[2].scale(that.yFn(d)); })
+            .attr('height', function (d) { return graph.scales[2].scale(graph.scales[2]._min) - graph.scales[2].scale(that.yFn(d)); });
     };
 
     // Scales
@@ -176,6 +175,26 @@
     Scale.prototype.dim = function (d) {
         this._dim = d;
         return this;
+    }
+
+    Scale.prototype.domain = function (interval) {
+        this.d3Scale = this.d3Scale.domain(interval);
+        return this;
+    }
+
+    Scale.prototype.range = function (interval) {
+        this.d3Scale = this.d3Scale.range(interval);
+        return this;
+    }
+
+    Scale.prototype.rangeBands = function (interval, padding) {
+        this.d3Scale = this.d3Scale.rangeBands(interval, padding);
+        return this;
+    }
+
+
+    Scale.prototype.scale = function (v) {
+        return this.d3Scale(v);
     }
 
     Scale.prototype.min = function (m) {
