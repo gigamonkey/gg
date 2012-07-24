@@ -10,6 +10,18 @@
         return this;
     }
 
+    Graphic.prototype.x = function (d, layer) {
+        return this.scales['x'].scale(layer.geometry.xFn(d));
+    }
+
+    Graphic.prototype.y = function (d, layer) {
+        return this.scales['y'].scale(layer.geometry.yFn(d));
+    }
+
+    Graphic.prototype.newYMin = function () {
+        return this.scales['y'].scale(this.scales['y']._min)
+    }
+
     Graphic.prototype.rangeFor = function (dim) {
         if (dim === 'x') {
             return [10, this.width - 20];
@@ -97,10 +109,12 @@
 
     function Layer (geometry) {
         this.geometry = geometry;
-        this.statistic  = identity;
-        this.positioner = null;
-        this.data       = null;
         this.mappings   = {};
+        /* Not used yet
+           this.statistic  = identity;
+           this.positioner = null;
+           this.data       = null;
+        */
         return this;
     }
 
@@ -127,12 +141,13 @@
 
     PointGeometry.prototype.render = function (graph, data) {
         var that = this;
+        var layer = this.layer;
         var circle = graph.svg.append('g').selectAll('circle')
             .data(data)
             .enter()
             .append('circle')
-            .attr('cx', function (d) { return graph.scales['x'].scale(that.xFn(d)) })
-            .attr('cy', function (d) { return graph.scales['y'].scale(that.yFn(d)) })
+            .attr('cx', function (d) { return graph.x(d, layer); })
+            .attr('cy', function (d) { return graph.y(d, layer); })
             .attr('r', this.rFn);
     };
 
@@ -141,9 +156,9 @@
     LineGeometry.prototype = new Geometry();
 
     LineGeometry.prototype.render = function (graph, data) {
-        var e = this;
-        function x (d) { return graph.scales['x'].scale(e.xFn(d)); }
-        function y (d) { return graph.scales['y'].scale(e.yFn(d)); }
+        var layer = this.layer;
+        function x (d) { return graph.x(d, layer); }
+        function y (d) { return graph.y(d, layer); }
 
         var polyline = graph.svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
@@ -157,15 +172,15 @@
     IntervalGeometry.prototype = new Geometry();
 
     IntervalGeometry.prototype.render = function (graph, data) {
-        var that = this;
+        var layer = this.layer;
         var rect = graph.svg.append('g').selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', function (d) { return graph.scales['x'].scale(that.xFn(d)) - 2.5; })
+            .attr('x', function (d) { return graph.x(d, layer) - 2.5; })
+            .attr('y', function (d) { return graph.y(d, layer); })
             .attr('width', 5)
-            .attr('y', function (d) { return graph.scales['y'].scale(that.yFn(d)); })
-            .attr('height', function (d) { return graph.scales['y'].scale(graph.scales['y']._min) - graph.scales['y'].scale(that.yFn(d)); });
+            .attr('height', function (d) { return graph.newYMin() - graph.y(d, layer); });
     };
 
     ////////////////////////////////////////////////////////////////////////
