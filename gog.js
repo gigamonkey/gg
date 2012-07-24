@@ -10,37 +10,29 @@
         return this;
     }
 
-    Graphic.prototype.scaledValue = function (d, layer, aesthetic) {
-        return this.scales[aesthetic].scale(layer.dataValue(d, aesthetic));
-    }
-
-    Graphic.prototype.scaledMin = function (aesthetic) {
-        return this.scales[aesthetic].scale(this.scales[aesthetic]._min)
-    }
-
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
             return [10, this.width - 20];
         } else if (aesthetic === 'y') {
             return [this.height - 20, 10];
         } else {
-            throw 'Only 2d graphics supported: Bad aesthetic: ' + aesthetic;
+            throw 'Only 2d graphics supported. Unknown aesthetic: ' + aesthetic;
         }
     };
 
     Graphic.prototype.dataMin = function (data, aesthetic) {
-        function key (x) { return x.dataMin(data, aesthetic); }
+        function key (layer) { return layer.dataMin(data, aesthetic); }
         return key(_.min(this.layers, key));
     }
 
     Graphic.prototype.dataMax = function (data, aesthetic) {
-        function key (x) { return x.dataMax(data, aesthetic); }
+        function key (layer) { return layer.dataMax(data, aesthetic); }
         return key(_.max(this.layers, key));
     }
 
     Graphic.prototype.render = function (where, data) {
-        // Render the graph using the given data into the given
-        // HTML element (a div or span usually).
+        // Render the graphic using the given data into the given HTML
+        // element (a div or span usually).
         this.svg = where.append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -87,9 +79,11 @@
         return this;
     };
 
-    function Layer (geometry) {
+    function Layer (geometry, graphic) {
         this.geometry = geometry;
-        this.mappings   = {};
+        this.graphic  = graphic;
+        this.mappings = {};
+        this.scales   = {};
         /* Not used yet
            this.statistic  = identity;
            this.positioner = null;
@@ -98,9 +92,21 @@
         return this;
     }
 
-    Layer.prototype.render = function (graph, data) {
-        this.geometry.render(graph, data);
-    }
+    Layer.prototype.scaleFor = function (aesthetic) {
+        return this.scales[aesthetic] || this.graphic.scales[aesthetic]
+    };
+
+    Layer.prototype.scaledValue = function (d, aesthetic) {
+        return this.scaleFor(aesthetic).scale(this.dataValue(d, aesthetic));
+    };
+
+    Layer.prototype.scaledMin = function (aesthetic) {
+        return this.scaleFor(aesthetic).scale(this.scaleFor(aesthetic)._min);
+    };
+
+    Layer.prototype.render = function (graphic, data) {
+        this.geometry.render(graphic.svg, data);
+    };
 
     Layer.prototype.dataValue = function (datum, aesthetic) {
         return datum[this.mappings[aesthetic]];
@@ -110,69 +116,74 @@
         var e = this;
         function key (d) { return e.dataValue(d, aesthetic); }
         return e.dataValue(_.min(data, key), aesthetic);
-    }
+    };
 
     Layer.prototype.dataMax = function (data, aesthetic) {
         var e = this;
         function key (d) { return e.dataValue(d, aesthetic); }
         return e.dataValue(_.max(data, key), aesthetic);
-    }
+    };
+
+    ////////////////////////////////////////////////////////////////////////
+    // Geometry objects are the ones that actually draw stuff onto the
+    // Graphic. They only care about scaled values.
+
 
     function Geometry () { return this; }
 
-    function PointGeometry () {
-        this.rFn = function (d) { return 5; };
-        return this;
-    }
+    function PointGeometry () { return this; }
 
     PointGeometry.prototype = new Geometry();
 
-    PointGeometry.prototype.render = function (graph, data) {
-        var that = this;
+    PointGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
-        var circle = graph.svg.append('g').selectAll('circle')
+        var circle = svg.append('g').selectAll('circle')
             .data(data)
             .enter()
             .append('circle')
-            .attr('cx', function (d) { return graph.scaledValue(d, layer, 'x'); })
-            .attr('cy', function (d) { return graph.scaledValue(d, layer, 'y'); })
-            .attr('r', this.rFn);
+            .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
+            .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
+            .attr('r', 5);
     };
 
     function LineGeometry () { return this; }
 
     LineGeometry.prototype = new Geometry();
 
-    LineGeometry.prototype.render = function (graph, data) {
+    LineGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
-        function x (d) { return graph.scaledValue(d, layer, 'x'); }
-        function y (d) { return graph.scaledValue(d, layer, 'y'); }
+        function x (d) { return layer.scaledValue(d, 'x'); }
+        function y (d) { return layer.scaledValue(d, 'y'); }
 
-        var polyline = graph.svg.append('polyline')
+        var polyline = svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
             .attr('fill', 'none')
             .attr('stroke', 'black')
             .attr('stroke-width', 2);
-    }
+    };
 
     function IntervalGeometry () { return this; }
 
     IntervalGeometry.prototype = new Geometry();
 
-    IntervalGeometry.prototype.render = function (graph, data) {
+    IntervalGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
-        var rect = graph.svg.append('g').selectAll('rect')
+        var rect = svg.append('g').selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', function (d) { return graph.scaledValue(d, layer, 'x') - 2.5; })
-            .attr('y', function (d) { return graph.scaledValue(d, layer, 'y'); })
+            .attr('x', function (d) { return layer.scaledValue(d, 'x') - 2.5; })
+            .attr('y', function (d) { return layer.scaledValue(d, 'y'); })
             .attr('width', 5)
-            .attr('height', function (d) { return graph.scaledMin('y') - graph.scaledValue(d, layer, 'y'); });
+            .attr('height', function (d) { return layer.scaledMin('y') - layer.scaledValue(d, 'y'); });
     };
 
     ////////////////////////////////////////////////////////////////////////
-    // Scales
+    // Scales -- a scale is used to map from data values to aesthetic
+    // values. Each layer maps certain variables or expressions to
+    // certain aesthetics (e.g. the data may contain 'height' and
+    // 'weight' which are mapped to the standard 'x' and 'y'
+    // aesthetics.)
 
     function Scale () { return this; }
 
@@ -238,14 +249,14 @@
         return this;
     }
 
-    function makeLayer (spec) {
+    function makeLayer (spec, graphic) {
         var geometry = new {
             point: PointGeometry,
             line: LineGeometry,
             interval: IntervalGeometry,
         }[spec.geometry || 'point'];
 
-        var layer = new Layer(geometry);
+        var layer = new Layer(geometry, graphic);
         geometry.layer = layer;
         spec.mapping !== _undefined && (layer.mappings = spec.mapping);
         return layer;
@@ -272,7 +283,7 @@
         var g = new Graphic();
         g.width = spec.width;
         g.height = spec.height;
-        _.each(spec.layers, function (e) { g.layer(makeLayer(e)); });
+        _.each(spec.layers, function (s) { g.layer(makeLayer(s, g)); });
         _.each(spec.scales, function (s) { g.scale(makeScale(s)); });
         return g;
     }
@@ -331,7 +342,7 @@
         var w = 250;
         var h = 150;
 
-        // Define graphs ...
+        // Define graphics ...
         var scatterplot = gg({
             width: w,
             height: h,
