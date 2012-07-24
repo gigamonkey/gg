@@ -2,14 +2,14 @@
 
     var _undefined;
 
-    function Graph () {
+    function Graphic () {
         this.elements = [];
         this.scales   = {};
         this.d3Scales = {};
         return this;
     }
 
-    Graph.prototype.rangeForDim = function (dim) {
+    Graphic.prototype.rangeForDim = function (dim) {
         if (dim == 1) {
             return [10, this.width - 20];
         } else if (dim == 2) {
@@ -19,33 +19,33 @@
         }
     };
 
-    Graph.prototype.xMin = function (data) {
+    Graphic.prototype.xMin = function (data) {
         var e = this.elements[0];
         return e.xFn(_.min(data, function (d) { return e.xFn(d); }));
     };
 
-    Graph.prototype.xMax = function (data) {
+    Graphic.prototype.xMax = function (data) {
         var e = this.elements[0];
         return e.xFn(_.max(data, function (d) { return e.xFn(d); }));
     };
 
-    Graph.prototype.yMin = function (data) {
+    Graphic.prototype.yMin = function (data) {
         var e = this.elements[0];
         return e.yFn(_.min(data, function (d) { return e.yFn(d); }));
     };
 
-    Graph.prototype.yMax = function (data) {
+    Graphic.prototype.yMax = function (data) {
         var e = this.elements[0];
         return e.yFn(_.max(data, function (d) { return e.yFn(d); }));
     };
 
-    Graph.prototype.size = function (w, h) {
+    Graphic.prototype.size = function (w, h) {
         this.width = w;
         this.height = h;
         return this;
     }
 
-    Graph.prototype.render = function (where, data) {
+    Graphic.prototype.render = function (where, data) {
         // Render the graph using the given data into the given
         // element (a div or span usually).
         this.svg = where.append('svg')
@@ -85,12 +85,12 @@
         _.each(this.elements, function (e) { e.render(this, data); }, this);
     };
 
-    Graph.prototype.element = function (e) {
+    Graphic.prototype.element = function (e) {
         this.elements.push(e);
         return this;
     };
 
-    Graph.prototype.scale = function (s) {
+    Graphic.prototype.scale = function (s) {
         this.scales[s._dim] = s;
         return this;
     };
@@ -245,7 +245,7 @@
     // API
 
     function gg (spec) {
-        var g = new Graph();
+        var g = new Graphic();
         g.width = spec.width;
         g.height = spec.height;
         _.each(spec.elements, function (e) { g.element(makeElement(e)); });
