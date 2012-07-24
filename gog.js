@@ -10,16 +10,12 @@
         return this;
     }
 
-    Graphic.prototype.x = function (d, layer) {
-        return this.scales['x'].scale(layer.dataValue(d, 'x'));
+    Graphic.prototype.scaledValue = function (d, layer, aesthetic) {
+        return this.scales[aesthetic].scale(layer.dataValue(d, aesthetic));
     }
 
-    Graphic.prototype.y = function (d, layer) {
-        return this.scales['y'].scale(layer.dataValue(d, 'y'));
-    }
-
-    Graphic.prototype.yMin = function () {
-        return this.scales['y'].scale(this.scales['y']._min)
+    Graphic.prototype.scaledMin = function (aesthetic) {
+        return this.scales[aesthetic].scale(this.scales[aesthetic]._min)
     }
 
     Graphic.prototype.rangeFor = function (dim) {
@@ -138,8 +134,8 @@
             .data(data)
             .enter()
             .append('circle')
-            .attr('cx', function (d) { return graph.x(d, layer); })
-            .attr('cy', function (d) { return graph.y(d, layer); })
+            .attr('cx', function (d) { return graph.scaledValue(d, layer, 'x'); })
+            .attr('cy', function (d) { return graph.scaledValue(d, layer, 'y'); })
             .attr('r', this.rFn);
     };
 
@@ -149,8 +145,8 @@
 
     LineGeometry.prototype.render = function (graph, data) {
         var layer = this.layer;
-        function x (d) { return graph.x(d, layer); }
-        function y (d) { return graph.y(d, layer); }
+        function x (d) { return graph.scaledValue(d, layer, 'x'); }
+        function y (d) { return graph.scaledValue(d, layer, 'y'); }
 
         var polyline = graph.svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
@@ -169,10 +165,10 @@
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', function (d) { return graph.x(d, layer) - 2.5; })
-            .attr('y', function (d) { return graph.y(d, layer); })
+            .attr('x', function (d) { return graph.scaledValue(d, layer, 'x') - 2.5; })
+            .attr('y', function (d) { return graph.scaledValue(d, layer, 'y'); })
             .attr('width', 5)
-            .attr('height', function (d) { return graph.yMin() - graph.y(d, layer); });
+            .attr('height', function (d) { return graph.scaledMin('y') - graph.scaledValue(d, layer, 'y'); });
     };
 
     ////////////////////////////////////////////////////////////////////////
