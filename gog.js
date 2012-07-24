@@ -11,11 +11,11 @@
     }
 
     Graphic.prototype.x = function (d, layer) {
-        return this.scales['x'].scale(layer.geometry.xFn(d));
+        return this.scales['x'].scale(layer.xFn(d));
     }
 
     Graphic.prototype.y = function (d, layer) {
-        return this.scales['y'].scale(layer.geometry.yFn(d));
+        return this.scales['y'].scale(layer.yFn(d));
     }
 
     Graphic.prototype.newYMin = function () {
@@ -33,30 +33,24 @@
     };
 
     Graphic.prototype.xMin = function (data) {
-        var e = this.layers[0].geometry;
+        var e = this.layers[0];
         return e.xFn(_.min(data, function (d) { return e.xFn(d); }));
     };
 
     Graphic.prototype.xMax = function (data) {
-        var e = this.layers[0].geometry;
+        var e = this.layers[0];
         return e.xFn(_.max(data, function (d) { return e.xFn(d); }));
     };
 
     Graphic.prototype.yMin = function (data) {
-        var e = this.layers[0].geometry;
+        var e = this.layers[0];
         return e.yFn(_.min(data, function (d) { return e.yFn(d); }));
     };
 
     Graphic.prototype.yMax = function (data) {
-        var e = this.layers[0].geometry;
+        var e = this.layers[0];
         return e.yFn(_.max(data, function (d) { return e.yFn(d); }));
     };
-
-    Graphic.prototype.size = function (w, h) {
-        this.width = w;
-        this.height = h;
-        return this;
-    }
 
     Graphic.prototype.render = function (where, data) {
         // Render the graph using the given data into the given
@@ -122,15 +116,16 @@
         this.geometry.render(graph, data);
     }
 
+    Layer.prototype.xFn = function (d) {
+        return d[this.mappings['x']];
+    };
+
+    Layer.prototype.yFn = function (d) {
+        return d[this.mappings['y']];
+    };
+
+
     function Geometry () { return this; }
-
-    Geometry.prototype.xFn = function (d) {
-        return d[this.layer.mappings['x']];
-    };
-
-    Geometry.prototype.yFn = function (d) {
-        return d[this.layer.mappings['y']];
-    };
 
     function PointGeometry () {
         this.rFn = function (d) { return 5; };
