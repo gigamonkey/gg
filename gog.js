@@ -1,5 +1,7 @@
 ;(function () {
 
+    var _undefined;
+
     function Graph () {
         this.elements = [];
         this.scales   = {};
@@ -207,11 +209,51 @@
 
     CategoricalScale.prototype = new Scale();
 
-    CategoricalScale.prototype.values = function () {
+    CategoricalScale.prototype.values = function (values) {
         this.domainSet = true;
-        this.d3Scale.domain(arguments);
+        this.d3Scale.domain(values);
         return this;
     }
+
+
+    function makeElement (spec) {
+        var elementClasses = {
+            point: PointElement,
+            line: LineElement,
+            interval: IntervalElement,
+        };
+        var e = new elementClasses[spec.geometry || 'point'];
+        spec.position !== _undefined && e.position(spec.position);
+        return e;
+    }
+
+    function makeScale (spec) {
+        var scaleClasses = {
+            linear: LinearScale,
+            log: LogScale,
+            categorical: CategoricalScale,
+        };
+        var s = new scaleClasses[spec.type || 'linear'];
+        spec.dim !== _undefined && s.dim(spec.dim);
+        spec.values !== _undefined && s.values(spec.values);
+        spec.min !== _undefined && s.min(spec.min);
+        spec.max !== _undefined && s.min(spec.max);
+        return s;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // API
+
+    function gg (spec) {
+        var g = new Graph();
+        g.width = spec.width;
+        g.height = spec.height;
+        _.each(spec.elements, function (e) { g.element(makeElement(e)); });
+        _.each(spec.scales, function (s) { g.scale(makeScale(s)); });
+        return g;
+    }
+
+    window.gg = gg;
 
     ////////////////////////////////////////////////////////////////////////
     /// Examples
@@ -265,40 +307,61 @@
         var w = 250;
         var h = 150;
 
-        // scatterplot
-        new Graph().size(w, h)
-            .element(new PointElement().position('d*r'))
-            .render(ex(), data);
+        // Define graphs ...
+        var scatterplot = gg({
+            width: w,
+            height: h,
+            elements: [{ geometry: 'point', position: 'd*r' }]
+        });
 
-        // line chart
-        new Graph().size(w, h)
-            .element(new LineElement().position('d*r'))
-            .render(ex(), data);
+        var linechart = gg({
+            width: w,
+            height: h,
+            elements: [{ geometry: 'line', position: 'd*r' }]
+        });
 
-        // bar chart
-        new Graph().size(w, h)
-            .element(new IntervalElement().position('d*r'))
-            .render(ex(), data);
+        var barchart = gg({
+            width: w,
+            height: h,
+            elements: [{ geometry: 'interval', position: 'd*r' }]
+        });
 
-        // histogram
-        new Graph().size(w, h)
-            .element(new IntervalElement().position('category*count'))
-            .scale(new CategoricalScale().dim(1).values('foo', 'bar', 'baz', 'quux'))
-            .scale(new LinearScale().dim(2).min(0))
-            .render(ex(), categoricalData);
+        var histogram = gg({
+            width: w,
+            height: h,
+            elements: [{ geometry: 'interval', position: 'category*count' }],
+            scales: [
+                { type: 'categorical', dim: 1, values: ['foo', 'bar', 'baz', 'quux'] },
+                { type: 'linear', dim: 2, min: 0 }
+            ]
+        });
 
-        // combined points and line
-        new Graph().size(w, h)
-            .element(new PointElement().position('d*r'))
-            .element(new LineElement().position('d*r'))
-            .render(ex(), data);
+        var combined_points_and_line = gg({
+            width: w,
+            height: h,
+            elements: [
+                { geometry: 'point', position: 'd*r' },
+                { geometry: 'line', position: 'd*r' },
+            ],
+        });
 
-        // semi-log scale
-        new Graph().size(w, h)
-            .element(new PointElement().position('d*r'))
-            .element(new LineElement().position('d*r'))
-            .scale(new LogScale().dim(2))
-            .render(ex(), semiLogData);
+        var semi_log_scale = gg({
+            width: w,
+            height: h,
+            elements: [
+                { geometry: 'point', position: 'd*r' },
+                { geometry: 'line', position: 'd*r' },
+            ],
+            scales: [ { type: 'log', dim: 2 } ]
+        });
+
+        // ... and render 'em
+        scatterplot.render(ex(), data);
+        linechart.render(ex(), data);
+        barchart.render(ex(), data);
+        histogram.render(ex(), categoricalData);
+        combined_points_and_line.render(ex(), data);
+        semi_log_scale.render(ex(), semiLogData);
 
     });
 
