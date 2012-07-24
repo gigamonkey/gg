@@ -69,16 +69,15 @@
         // Default the scale's domains if they are not supplied.
         _.each(this.scales, function (s, dim) {
             if (! s.domainSet) {
-                if (typeof s._min === 'undefined') {
+                if (s._min === _undefined) {
                     s._min = (dim == 1) ? this.xMin(data) : this.yMin(data);
                 }
-                if (typeof s._max === 'undefined') {
+                if (s._max === _undefined) {
                     s._max = (dim == 1) ? this.xMax(data) : this.yMax(data);
                 }
-                s.domain([s._min, s._max]).range(this.rangeForDim(dim));
-            } else {
-                s.rangeBands(this.rangeForDim(dim), .5);
+                s.domain([s._min, s._max]);
             }
+            s.range(this.rangeForDim(dim));
         }, this);
 
         _.each(this.elements, function (e) { e.render(this, data); }, this);
@@ -168,6 +167,7 @@
             .attr('height', function (d) { return graph.scales[2].scale(graph.scales[2]._min) - graph.scales[2].scale(that.yFn(d)); });
     };
 
+    ////////////////////////////////////////////////////////////////////////
     // Scales
 
     function Scale () { return this; }
@@ -186,12 +186,6 @@
         this.d3Scale = this.d3Scale.range(interval);
         return this;
     }
-
-    Scale.prototype.rangeBands = function (interval, padding) {
-        this.d3Scale = this.d3Scale.rangeBands(interval, padding);
-        return this;
-    }
-
 
     Scale.prototype.scale = function (v) {
         return this.d3Scale(v);
@@ -223,6 +217,7 @@
 
     function CategoricalScale () {
         this.d3Scale = d3.scale.ordinal();
+        this.padding = .5;
         return this;
     }
 
@@ -234,6 +229,10 @@
         return this;
     }
 
+    CategoricalScale.prototype.range = function (interval) {
+        this.d3Scale = this.d3Scale.rangeBands(interval, this.padding);
+        return this;
+    }
 
     function makeElement (spec) {
         var elementClasses = {
