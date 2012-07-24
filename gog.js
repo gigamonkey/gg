@@ -18,13 +18,13 @@
         return this.scales[aesthetic].scale(this.scales[aesthetic]._min)
     }
 
-    Graphic.prototype.rangeFor = function (dim) {
-        if (dim === 'x') {
+    Graphic.prototype.rangeFor = function (aesthetic) {
+        if (aesthetic === 'x') {
             return [10, this.width - 20];
-        } else if (dim === 'y') {
+        } else if (aesthetic === 'y') {
             return [this.height - 20, 10];
         } else {
-            throw 'Only 2d graphics supported: Bad dim: ' + dim;
+            throw 'Only 2d graphics supported: Bad aesthetic: ' + aesthetic;
         }
     };
 
@@ -54,24 +54,24 @@
             .attr('fill-opacity', 1);
 
         // Default to linear scales if not supplied.
-        _.each(['x', 'y'], function (dim) {
-            if (this.scales[dim] === _undefined) {
-                this.scale(new LinearScale().dim(dim));
+        _.each(['x', 'y'], function (aesthetic) {
+            if (this.scales[aesthetic] === _undefined) {
+                this.scale(new LinearScale().aesthetic(aesthetic));
             }
         }, this);
 
         // Default the scale's domains if they are not supplied.
-        _.each(this.scales, function (s, dim) {
+        _.each(this.scales, function (s, aesthetic) {
             if (! s.domainSet) {
                 if (s._min === _undefined) {
-                    s._min = this.dataMin(data, dim);
+                    s._min = this.dataMin(data, aesthetic);
                 }
                 if (s._max === _undefined) {
-                    s._max = this.dataMax(data, dim);
+                    s._max = this.dataMax(data, aesthetic);
                 }
                 s.domain([s._min, s._max]);
             }
-            s.range(this.rangeFor(dim));
+            s.range(this.rangeFor(aesthetic));
         }, this);
 
         _.each(this.layers, function (e) { e.render(this, data); }, this);
@@ -83,7 +83,7 @@
     };
 
     Graphic.prototype.scale = function (s) {
-        this.scales[s._dim] = s;
+        this.scales[s._aesthetic] = s;
         return this;
     };
 
@@ -176,8 +176,8 @@
 
     function Scale () { return this; }
 
-    Scale.prototype.dim = function (d) {
-        this._dim = d;
+    Scale.prototype.aesthetic = function (a) {
+        this._aesthetic = a;
         return this;
     }
 
@@ -258,7 +258,7 @@
             categorical: CategoricalScale,
         }[spec.type || 'linear'];
 
-        spec.dim !== _undefined && s.dim(spec.dim);
+        spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
         spec.values !== _undefined && s.values(spec.values);
         spec.min !== _undefined && s.min(spec.min);
         spec.max !== _undefined && s.min(spec.max);
@@ -355,8 +355,8 @@
             height: h,
             layers: [{ geometry: 'interval', mapping: { x: 'category', y: 'count' } }],
             scales: [
-                { type: 'categorical', dim: 'x', values: ['foo', 'bar', 'baz', 'quux'] },
-                { type: 'linear', dim: 'y', min: 0 }
+                { type: 'categorical', aesthetic: 'x', values: ['foo', 'bar', 'baz', 'quux'] },
+                { type: 'linear', aesthetic: 'y', min: 0 }
             ]
         });
 
@@ -376,7 +376,7 @@
                 { geometry: 'point', mapping: { x: 'd', y: 'r' } },
                 { geometry: 'line', mapping: { x: 'd', y: 'r' } },
             ],
-            scales: [ { type: 'log', dim: 'y' } ]
+            scales: [ { type: 'log', aesthetic: 'y' } ]
         });
 
         // ... and render 'em
