@@ -8,7 +8,7 @@
         return this;
     }
 
-    Graphic.prototype.rangeForDim = function (dim) {
+    Graphic.prototype.rangeFor = function (dim) {
         if (dim == 1) {
             return [10, this.width - 20];
         } else if (dim == 2) {
@@ -77,7 +77,7 @@
                 }
                 s.domain([s._min, s._max]);
             }
-            s.range(this.rangeForDim(dim));
+            s.range(this.rangeFor(dim));
         }, this);
 
         _.each(this.elements, function (e) { e.render(this, data); }, this);
