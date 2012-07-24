@@ -11,11 +11,11 @@
     }
 
     Graphic.prototype.x = function (d, layer) {
-        return this.scales['x'].scale(layer.xFn(d));
+        return this.scales['x'].scale(layer.dataValue(d, 'x'));
     }
 
     Graphic.prototype.y = function (d, layer) {
-        return this.scales['y'].scale(layer.yFn(d));
+        return this.scales['y'].scale(layer.dataValue(d, 'y'));
     }
 
     Graphic.prototype.newYMin = function () {
@@ -32,25 +32,17 @@
         }
     };
 
-    Graphic.prototype.xMin = function (data) {
+    Graphic.prototype.dataMin = function (data, aesthetic) {
         var e = this.layers[0];
-        return e.xFn(_.min(data, function (d) { return e.xFn(d); }));
-    };
+        function key (d) { return e.dataValue(d, aesthetic); }
+        return e.dataValue(_.min(data, key), aesthetic);
+    }
 
-    Graphic.prototype.xMax = function (data) {
+    Graphic.prototype.dataMax = function (data, aesthetic) {
         var e = this.layers[0];
-        return e.xFn(_.max(data, function (d) { return e.xFn(d); }));
-    };
-
-    Graphic.prototype.yMin = function (data) {
-        var e = this.layers[0];
-        return e.yFn(_.min(data, function (d) { return e.yFn(d); }));
-    };
-
-    Graphic.prototype.yMax = function (data) {
-        var e = this.layers[0];
-        return e.yFn(_.max(data, function (d) { return e.yFn(d); }));
-    };
+        function key (d) { return e.dataValue(d, aesthetic); }
+        return e.dataValue(_.max(data, key), aesthetic);
+    }
 
     Graphic.prototype.render = function (where, data) {
         // Render the graph using the given data into the given
@@ -78,10 +70,10 @@
         _.each(this.scales, function (s, dim) {
             if (! s.domainSet) {
                 if (s._min === _undefined) {
-                    s._min = (dim === 'x') ? this.xMin(data) : this.yMin(data);
+                    s._min = this.dataMin(data, dim);
                 }
                 if (s._max === _undefined) {
-                    s._max = (dim === 'x') ? this.xMax(data) : this.yMax(data);
+                    s._max = this.dataMax(data, dim);
                 }
                 s.domain([s._min, s._max]);
             }
@@ -116,14 +108,9 @@
         this.geometry.render(graph, data);
     }
 
-    Layer.prototype.xFn = function (d) {
-        return d[this.mappings['x']];
+    Layer.prototype.dataValue = function (datum, aesthetic) {
+        return datum[this.mappings[aesthetic]];
     };
-
-    Layer.prototype.yFn = function (d) {
-        return d[this.mappings['y']];
-    };
-
 
     function Geometry () { return this; }
 
