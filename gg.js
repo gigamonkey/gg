@@ -135,7 +135,10 @@
 
     function Geometry () { return this; }
 
-    function PointGeometry () { return this; }
+    function PointGeometry (spec) {
+        this.size = spec.size || 5;
+        return this;
+    }
 
     PointGeometry.prototype = new Geometry();
 
@@ -147,7 +150,7 @@
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
-            .attr('r', 5);
+            .attr('r', this.size);
     };
 
     function LineGeometry () { return this; }
@@ -288,7 +291,7 @@
             point: PointGeometry,
             line: LineGeometry,
             interval: IntervalGeometry,
-        }[spec.geometry || 'point'];
+        }[spec.geometry || 'point'](spec);
 
         var layer = new Layer(geometry, graphic);
         geometry.layer = layer;
