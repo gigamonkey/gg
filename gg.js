@@ -2,8 +2,6 @@
 
     var _undefined;
 
-    function identity (x) { return x; }
-
     function Graphic () {
         this.layers = [];
         this.scales = {};
@@ -63,8 +61,8 @@
         this.graphic  = graphic;
         this.mappings = {};
         this.scales   = {};
+        this.statistic = null;
         /* Not used yet
-           this.statistic  = identity;
            this.positioner = null;
            this.data       = null;
         */
@@ -102,24 +100,16 @@
         _.each(this.aesthetics(), function (aesthetic) {
             var s = this.scaleFor(aesthetic);
             if (! s.domainSet) {
-                if (s._min === _undefined) {
-                    s._min = this.graphic.dataMin(data, aesthetic);
-                }
-                if (s._max === _undefined) {
-                    s._max = this.graphic.dataMax(data, aesthetic);
-                }
-                s.domain([s._min, s._max]);
+                s.defaultDomain(this, data, aesthetic);
             }
             s.range(this.graphic.rangeFor(aesthetic));
         }, this);
-
-
     };
 
-
     Layer.prototype.render = function (graphic, data) {
-        this.trainScales(data);
-        this.geometry.render(graphic.svg, data);
+        var newData = this.statistic.compute(data);
+        this.trainScales(newData);
+        this.geometry.render(graphic.svg, newData);
     };
 
     Layer.prototype.dataValue = function (datum, aesthetic) {
@@ -218,6 +208,17 @@
         return this;
     }
 
+    Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
+        if (this._min === _undefined) {
+            this._min = layer.graphic.dataMin(data, aesthetic);
+        }
+        if (this._max === _undefined) {
+            this._max = layer.graphic.dataMax(data, aesthetic);
+        }
+        this.domain([this._min, this._max]);
+
+    };
+
     Scale.prototype.domain = function (interval) {
         this.d3Scale = this.d3Scale.domain(interval);
         return this;
@@ -270,6 +271,13 @@
         return this;
     }
 
+    CategoricalScale.prototype.defaultDomain = function (layer, data, aesthetic) {
+        function val (d) { return layer.dataValue(d, aesthetic); }
+        var values = _.uniq(_.map(data, val));
+        values.sort(function (a,b) { return a - b; });
+        this.values(values);
+    }
+
     CategoricalScale.prototype.range = function (interval) {
         this.d3Scale = this.d3Scale.rangeBands(interval, this.padding);
         return this;
@@ -285,6 +293,7 @@
         var layer = new Layer(geometry, graphic);
         geometry.layer = layer;
         spec.mapping !== _undefined && (layer.mappings = spec.mapping);
+        layer.statistic = makeStatistic(spec.statistic || { kind: 'identity' });
         return layer;
     }
 
@@ -301,6 +310,57 @@
         spec.max !== _undefined && s.min(spec.max);
         return s;
     }
+
+    function makeStatistic (spec) {
+        return new {
+            identity: Identity,
+            bin: Bin,
+        }[spec.kind](spec);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////
+    // Statistics
+
+    function Statistic () { return this; }
+
+    function Identity () { return this; }
+
+    Identity.prototype = new Statistic();
+
+    Identity.prototype.compute = function (data) { return data; }
+
+    function Bin (spec) {
+        this.variable = spec.variable;
+        this.binsize  = spec.binsize || 10;
+        return this;
+    }
+
+    Bin.prototype = new Statistic();
+
+    // Cannonical histogram. We have height/weight data for a few
+    // thousand people. We want to see the distribution of weights so
+    // we make a histogram of the number of people's whose weights
+    // fall in 10lb bins => [ { min: 0, max: 10, count: 0 }, {min: 10, max: 20, count: 0 }, ... ]
+    Bin.prototype.compute = function (data) {
+        // Loop through the data counting the number of occurrences of
+        // each value of a given variable (for categorical values) or
+        // the number of values that fall in bins of a given size.
+        var values = _.pluck(data, this.variable);
+        var bins = {};
+        _.each(values, function (v) {
+            var bin = Math.ceil(v / this.binsize);
+            if (bins[bin] === _undefined) {
+                bins[bin] = 0;
+            }
+            bins[bin]++;
+        }, this);
+        var result = _.map(bins, function (count, bin) {
+            return { bin: bin, count: count };
+        });
+        return result;
+    };
+
 
     ////////////////////////////////////////////////////////////////////////
     // API
