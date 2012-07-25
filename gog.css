@@ -13,24 +13,18 @@ div#examples span { margin: 3px; }
   shape-rendering: crispEdges;
 }
 
-.x.axis line {
+.axis line {
   stroke: #fff;
 }
 
-.x.axis .minor {
+.axis .minor {
   stroke-opacity: .5;
 }
-
-.x.axis path {
+.axis path {
   display: none;
 }
 
-.y.axis line, .y.axis path {
-  fill: none;
-  stroke: #000;
-}
-
-.x.axis text {
+.axis text {
   font-size: 8px;
   font-weight: 300;
 }

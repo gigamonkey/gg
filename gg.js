@@ -47,13 +47,24 @@
 
         _.each(this.layers, function (e) { e.prepare(data); });
 
-        var xScale = this.scales['x'].d3Scale;
-        var xAxis = d3.svg.axis().scale(xScale).tickSize(-(this.height - (2*padding)));
+        var xAxis = d3.svg.axis()
+            .scale(this.scales['x'].d3Scale)
+            .tickSize(-(this.height - (2*padding)));
 
-        this.svg.append("svg:g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(" + 0 + "," + (this.height - padding) + ")")
+        var yAxis = d3.svg.axis()
+            .scale(this.scales['y'].d3Scale)
+            .tickSize(-(this.width - (2*padding)))
+            .orient('left');
+
+        this.svg.append('svg:g')
+            .attr('class', 'x axis')
+            .attr('transform', 'translate(0,' + (this.height - padding) + ')')
             .call(xAxis);
+
+        this.svg.append('svg:g')
+            .attr('class', 'y axis')
+            .attr('transform', 'translate(' + (2*padding) + ',0)')
+            .call(yAxis);
 
         _.each(this.layers, function (e) { e.render(this); }, this);
 
