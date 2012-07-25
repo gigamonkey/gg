@@ -43,17 +43,22 @@
 
     // Some random variables.
     var randomHeight   = d3.random.normal(66, 18);
-    var randomWeight   = d3.random.normal(200, 50);
+    var randomBMI      = d3.random.normal(21.75, 3);
     var standardNormal = d3.random.normal();
+
+    // bmi = lbs/inches^2 * 703.06958
+    // lbs = bmi * inches^2 / 703.06958
 
     // Some data to be plotted with a histograpm
     var heightWeight = (function () {
         var data = [];
         _.times(20000, function () {
+            var inches = randomHeight();
+            var lbs    = randomBMI() * inches * inches / 703.06958;
             data.push({
                 // These should really be correlated.
-                height: randomHeight(), // in inches
-                weight: randomWeight(), // in lbs
+                height: inches,
+                weight: lbs,
             });
         });
         return data;
@@ -132,6 +137,12 @@
             ]
         });
 
+        var heightWeightScatter = gg({
+            width: w,
+            height: h,
+            layers: [{ geometry: 'point', mapping: { x: 'height', y: 'weight' }, size: 1 }]
+        });
+
         var normalHistogram = gg({
             width: w,
             height: h,
@@ -156,6 +167,7 @@
         combined_points_and_line.render(ex(), data);
         semi_log_scale.render(ex(), semiLogData);
         heightHistogram.render(ex(), heightWeight);
+        heightWeightScatter.render(ex(), heightWeight);
         normalHistogram.render(ex(), normalData);
 
 
