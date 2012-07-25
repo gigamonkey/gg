@@ -45,27 +45,6 @@
             .attr('fill', '#dcb')
             .attr('fill-opacity', 1);
 
-        // Default to linear scales if not supplied.
-        _.each(['x', 'y'], function (aesthetic) {
-            if (this.scales[aesthetic] === _undefined) {
-                this.scale(new LinearScale().aesthetic(aesthetic));
-            }
-        }, this);
-
-        // Default the scale's domains if they are not supplied.
-        _.each(this.scales, function (s, aesthetic) {
-            if (! s.domainSet) {
-                if (s._min === _undefined) {
-                    s._min = this.dataMin(data, aesthetic);
-                }
-                if (s._max === _undefined) {
-                    s._max = this.dataMax(data, aesthetic);
-                }
-                s.domain([s._min, s._max]);
-            }
-            s.range(this.rangeFor(aesthetic));
-        }, this);
-
         _.each(this.layers, function (e) { e.render(this, data); }, this);
     };
 
@@ -101,10 +80,45 @@
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
-        return this.scaleFor(aesthetic).scale(this.scaleFor(aesthetic)._min);
+        var s = this.scaleFor(aesthetic);
+        return s.scale(s._min);
     };
 
+    Layer.prototype.aesthetics = function () {
+        return _.keys(this.mappings);
+    }
+
+    Layer.prototype.ensureScales = function () {
+        // Need a scale for each aesthetic we care about.
+        _.each(this.aesthetics(), function (aesthetic) {
+            if (! this.scaleFor(aesthetic)) {
+                this.scales[aesthetic] = Scale.default(aesthetic);
+            }
+        }, this);
+    };
+
+    Layer.prototype.trainScales = function (data) {
+        this.ensureScales();
+        _.each(this.aesthetics(), function (aesthetic) {
+            var s = this.scaleFor(aesthetic);
+            if (! s.domainSet) {
+                if (s._min === _undefined) {
+                    s._min = this.graphic.dataMin(data, aesthetic);
+                }
+                if (s._max === _undefined) {
+                    s._max = this.graphic.dataMax(data, aesthetic);
+                }
+                s.domain([s._min, s._max]);
+            }
+            s.range(this.graphic.rangeFor(aesthetic));
+        }, this);
+
+
+    };
+
+
     Layer.prototype.render = function (graphic, data) {
+        this.trainScales(data);
         this.geometry.render(graphic.svg, data);
     };
 
@@ -186,6 +200,18 @@
     // aesthetics.)
 
     function Scale () { return this; }
+
+    Scale.default = function (aesthetic) {
+        var clazz = {
+            x: LinearScale,
+            y: LinearScale,
+        }[aesthetic];
+
+        if (! clazz) {
+            throw 'No default scale for aesthetic ' + aesthetic;
+        }
+        return new clazz().aesthetic(aesthetic);
+    };
 
     Scale.prototype.aesthetic = function (a) {
         this._aesthetic = a;
