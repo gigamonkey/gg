@@ -1,11 +1,15 @@
 body {
     font-family: "Gill Sans";
-    margin: .25in .5in;
+    width: 1000px;
+    margin: .25in auto;
+    background: rgba(221, 204, 187, .15);
 }
 
 h1 {
     font-weight: 300;
 }
+
+rect.base { fill: rgba(221, 204, 187, 1); }
 
 div#examples span { margin: 3px; }
 

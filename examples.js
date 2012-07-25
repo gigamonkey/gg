@@ -70,8 +70,8 @@
 
         function ex () { return d3.select('#examples').append('span'); }
 
-        var w = 250;
-        var h = 150;
+        var w = 300;
+        var h = 200;
 
         // Define graphics ...
         var scatterplot = gg({

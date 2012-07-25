@@ -1,5 +1,9 @@
 ;(function (exports) {
 
+    // TODO:
+    // 1. Use d3 svg API where possible.
+    // 2. Make sure axes and actual plotting is lined up properly.
+
     var _undefined;
 
     function Graphic () {
@@ -38,12 +42,11 @@
             .attr('height', this.height);
 
         this.svg.append('rect')
+            .attr('class', 'base')
             .attr('x', 0)
             .attr('y', 0)
             .attr('width', this.width)
-            .attr('height', this.height)
-            .attr('fill', '#dcb')
-            .attr('fill-opacity', 1);
+            .attr('height', this.height);
 
         _.each(this.layers, function (e) { e.prepare(data); });
 
