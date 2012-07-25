@@ -8,11 +8,13 @@
         return this;
     }
 
+    var padding = 10;
+
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
-            return [10, this.width - 20];
+            return [padding, this.width - (2*padding)];
         } else if (aesthetic === 'y') {
-            return [this.height - 20, 10];
+            return [this.height - (2*padding), padding];
         } else {
             throw 'Only 2d graphics supported. Unknown aesthetic: ' + aesthetic;
         }
@@ -43,7 +45,18 @@
             .attr('fill', '#dcb')
             .attr('fill-opacity', 1);
 
-        _.each(this.layers, function (e) { e.render(this, data); }, this);
+        _.each(this.layers, function (e) { e.prepare(data); });
+
+        var xScale = this.scales['x'].d3Scale;
+        var xAxis = d3.svg.axis().scale(xScale).tickSize(-(this.height - (2*padding)));
+
+        this.svg.append("svg:g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(" + 0 + "," + (this.height - padding) + ")")
+            .call(xAxis);
+
+        _.each(this.layers, function (e) { e.render(this); }, this);
+
     };
 
     Graphic.prototype.layer = function (e) {
@@ -90,7 +103,7 @@
         // Need a scale for each aesthetic we care about.
         _.each(this.aesthetics(), function (aesthetic) {
             if (! this.scaleFor(aesthetic)) {
-                this.scales[aesthetic] = Scale.default(aesthetic);
+                this.graphic.scales[aesthetic] = Scale.default(aesthetic);
             }
         }, this);
     };
@@ -106,10 +119,13 @@
         }, this);
     };
 
-    Layer.prototype.render = function (graphic, data) {
-        var newData = this.statistic.compute(data);
-        this.trainScales(newData);
-        this.geometry.render(graphic.svg, newData);
+    Layer.prototype.prepare = function (data) {
+        this.newData = this.statistic.compute(data);
+        this.trainScales(this.newData);
+    };
+
+    Layer.prototype.render = function (graphic) {
+        this.geometry.render(graphic.svg, this.newData);
     };
 
     Layer.prototype.dataValue = function (datum, aesthetic) {

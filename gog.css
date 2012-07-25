@@ -8,3 +8,29 @@ h1 {
 }
 
 div#examples span { margin: 3px; }
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.x.axis line {
+  stroke: #fff;
+}
+
+.x.axis .minor {
+  stroke-opacity: .5;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.y.axis line, .y.axis path {
+  fill: none;
+  stroke: #000;
+}
+
+.x.axis text {
+  font-size: 8px;
+  font-weight: 300;
+}
