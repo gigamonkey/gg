@@ -66,6 +66,11 @@
 
     var normalData = _.map(_.range(20000), function (i) { return { v: standardNormal() }; });
 
+    var boxPlotData = [
+        { group: 'a', 'median': 200, 'q1': 50, 'q3': 275, 'lower': 25, 'upper': 360, 'outliers': [ -200, -175, 0, 10, 400, 500 ] },
+        { group: 'b', 'median': 350, 'q1': 60, 'q3': 375, 'lower': 20, 'upper': 500, 'outliers': [ -150, -100, 0, 5, 550, 575, 650 ] },
+    ];
+
     $(document).ready(function() {
 
         function ex () { return d3.select('#examples').append('span'); }
@@ -158,7 +163,17 @@
                 { type: 'categorical', aesthetic: 'x' },
                 { type: 'linear', aesthetic: 'y', min: 0 }
             ]
-        })
+        });
+
+        var boxPlot = gg({
+            width: w,
+            height: h,
+            layers: [ { geometry: 'box', mapping: { x: 'group', y: null } } ],
+            scales: [
+                { type: 'categorical', aesthetic: 'x' },
+                { type: 'linear', aesthetic: 'y', min: -300, max: 700 }
+            ],
+        });
 
         // ... and render 'em
         scatterplot.render(ex(), data);
@@ -169,8 +184,8 @@
         semi_log_scale.render(ex(), semiLogData);
         heightHistogram.render(ex(), heightWeight);
         heightWeightScatter.render(ex(), heightWeight);
-        normalHistogram.render(ex(), normalData);
-
+        //normalHistogram.render(ex(), normalData);
+        boxPlot.render(ex(), boxPlotData);
 
     });
 

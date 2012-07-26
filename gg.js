@@ -125,12 +125,12 @@
         }, this);
     };
 
-    Layer.prototype.trainScales = function (data) {
+    Layer.prototype.trainScales = function (newData) {
         this.ensureScales();
         _.each(this.aesthetics(), function (aesthetic) {
             var s = this.scaleFor(aesthetic);
             if (! s.domainSet) {
-                s.defaultDomain(this, data, aesthetic);
+                s.defaultDomain(this, newData, aesthetic);
             }
             s.range(this.graphic.rangeFor(aesthetic));
         }, this);
@@ -212,15 +212,106 @@
     IntervalGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
         var width = this.width;
+
+        function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
+
         var rect = svg.append('g').selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', function (d) { return layer.scaledValue(d, 'x') - width/2; })
-            .attr('y', function (d) { return layer.scaledValue(d, 'y'); })
+            .attr('x', function (d) { return scale(d, 'x') - width/2; })
+            .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)
-            .attr('height', function (d) { return layer.scaledMin('y') - layer.scaledValue(d, 'y'); });
+            .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); });
     };
+
+
+    function BoxPlotGeometry (spec) {
+        this.width = spec.width || 10;
+        return this;
+    }
+
+    BoxPlotGeometry.prototype = new Geometry();
+
+    BoxPlotGeometry.prototype.render = function (svg, data) {
+        // Data points are { group, median, q1, q3, upper, lower, outliers }
+        var layer = this.layer;
+        var width = this.width;
+
+        function scale (v, aesthetic) {
+            return layer.scaleFor(aesthetic).scale(v);
+        }
+
+        var boxes = svg.append('g').selectAll('g').data(data).enter();
+
+        // IQR box
+        boxes.append('rect')
+            .attr('class', 'boxplot iqr')
+            .attr('x', function (d) { return scale(d.group, 'x') - width/2; })
+            .attr('y', function (d) { return scale(d.q3, 'y'); })
+            .attr('width', width)
+            .attr('height', function (d) {
+                return scale(d.q1, 'y') - scale(d.q3, 'y');
+            });
+
+        // median line
+        boxes.append('line')
+            .attr('class', 'boxplot median')
+            .attr('x1', function (d) { return scale(d.group, 'x') - width/2; })
+            .attr('x2', function (d) { return scale(d.group, 'x') + width/2; })
+            .attr('y1', function (d) { return scale(d.median, 'y'); })
+            .attr('y2', function (d) { return scale(d.median, 'y'); });
+
+        // upper whisker
+        boxes.append('line')
+            .attr('class', 'boxplot whisker')
+            .attr('x1', function (d) { return scale(d.group, 'x'); })
+            .attr('x2', function (d) { return scale(d.group, 'x'); })
+            .attr('y1', function (d) { return scale(d.q3, 'y'); })
+            .attr('y2', function (d) { return scale(d.upper, 'y'); });
+
+        // upper whisker tick
+        boxes.append('line')
+            .attr('class', 'boxplot whisker')
+            .attr('x1', function (d) { return scale(d.group, 'x') - (width * .4); })
+            .attr('x2', function (d) { return scale(d.group, 'x') + (width * .4); })
+            .attr('y1', function (d) { return scale(d.upper, 'y'); })
+            .attr('y2', function (d) { return scale(d.upper, 'y'); });
+
+        // lower whisker
+        boxes.append('line')
+            .attr('class', 'boxplot whisker-tick')
+            .attr('x1', function (d) { return scale(d.group, 'x'); })
+            .attr('x2', function (d) { return scale(d.group, 'x'); })
+            .attr('y1', function (d) { return scale(d.q1, 'y'); })
+            .attr('y2', function (d) { return scale(d.lower, 'y'); });
+
+        // lower whisker tick
+        boxes.append('line')
+            .attr('class', 'boxplot whisker-tick')
+            .attr('x1', function (d) { return scale(d.group, 'x') - (width * .4); })
+            .attr('x2', function (d) { return scale(d.group, 'x') + (width * .4); })
+            .attr('y1', function (d) { return scale(d.lower, 'y'); })
+            .attr('y2', function (d) { return scale(d.lower, 'y'); });
+
+
+        // outliers
+        var outliers = [];
+        _.each(data, function (d) {
+            _.each(d.outliers, function (o) {
+                outliers.push({ group: d.group, value: o });
+            });
+        });
+
+        var o = svg.append('g').selectAll('circle.outliers').data(outliers).enter();
+        o.append('circle')
+            .attr('class', 'boxplot outliers')
+            .attr('cx', function (d) { return scale(d.group, 'x'); })
+            .attr('cy', function (d) { return scale(d.value, 'y'); })
+            .attr('r', 2);
+    }
+
+
 
     ////////////////////////////////////////////////////////////////////////
     // Scales -- a scale is used to map from data values to aesthetic
@@ -255,8 +346,8 @@
         if (this._max === _undefined) {
             this._max = layer.graphic.dataMax(data, aesthetic);
         }
+        this.domainSet = true;
         this.domain([this._min, this._max]);
-
     };
 
     Scale.prototype.domain = function (interval) {
@@ -330,6 +421,7 @@
             point: PointGeometry,
             line: LineGeometry,
             interval: IntervalGeometry,
+            box: BoxPlotGeometry,
         }[spec.geometry || 'point'](spec);
 
         var layer = new Layer(geometry, graphic);
