@@ -349,7 +349,7 @@
         spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
         spec.values !== _undefined && s.values(spec.values);
         spec.min !== _undefined && s.min(spec.min);
-        spec.max !== _undefined && s.min(spec.max);
+        spec.max !== _undefined && s.max(spec.max);
         return s;
     }
 
