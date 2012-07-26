@@ -24,10 +24,11 @@ div#examples span { margin: 3px; }
 .axis .minor {
   stroke-opacity: .5;
 }
-.axis path {
-  display: none;
-}
 
+.axis path {
+    stroke: #fff;
+    fill: none;
+}
 .axis text {
   font-size: 8px;
   font-weight: 300;

@@ -6,19 +6,21 @@
 
     var _undefined;
 
+    var json = JSON.stringify;
+
     function Graphic () {
         this.layers = [];
         this.scales = {};
         return this;
     }
 
-    var padding = 10;
+    var padding = 20;
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
-            return [padding, this.width - (2*padding)];
+            return [padding, this.width - padding];
         } else if (aesthetic === 'y') {
-            return [this.height - (2*padding), padding];
+            return [this.height - padding, padding];
         } else {
             throw 'Only 2d graphics supported. Unknown aesthetic: ' + aesthetic;
         }
@@ -52,7 +54,8 @@
 
         var xAxis = d3.svg.axis()
             .scale(this.scales['x'].d3Scale)
-            .tickSize(-(this.height - (2*padding)));
+            .tickSize(-(this.height - (2*padding)))
+            .orient('bottom');
 
         var yAxis = d3.svg.axis()
             .scale(this.scales['y'].d3Scale)
@@ -66,7 +69,7 @@
 
         this.svg.append('svg:g')
             .attr('class', 'y axis')
-            .attr('transform', 'translate(' + (2*padding) + ',0)')
+            .attr('transform', 'translate(' + padding + ',0)')
             .call(yAxis);
 
         _.each(this.layers, function (e) { e.render(this); }, this);
@@ -149,13 +152,13 @@
     Layer.prototype.dataMin = function (data, aesthetic) {
         var e = this;
         function key (d) { return e.dataValue(d, aesthetic); }
-        return e.dataValue(_.min(data, key), aesthetic);
+        return key(_.min(data, key));
     };
 
     Layer.prototype.dataMax = function (data, aesthetic) {
         var e = this;
         function key (d) { return e.dataValue(d, aesthetic); }
-        return e.dataValue(_.max(data, key), aesthetic);
+        return key(_.max(data, key));
     };
 
     ////////////////////////////////////////////////////////////////////////
