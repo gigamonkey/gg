@@ -89,13 +89,13 @@
         var barchart = gg({
             width: w,
             height: h,
-            layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' } }]
+            layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 }]
         });
 
         var histogram = gg({
             width: w,
             height: h,
-            layers: [{ geometry: 'interval', mapping: { x: 'category', y: 'count' } }],
+            layers: [{ geometry: 'interval', mapping: { x: 'category', y: 'count' }, width: 20 }],
             scales: [
                 { type: 'categorical', aesthetic: 'x' },
                 { type: 'linear', aesthetic: 'y', min: 0 }
@@ -106,8 +106,9 @@
             width: w,
             height: h,
             layers: [
-                { geometry: 'point', mapping: { x: 'd', y: 'r' } },
+                { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
                 { geometry: 'line', mapping: { x: 'd', y: 'r' } },
+                /*{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 },*/
             ],
         });
 
@@ -115,7 +116,7 @@
             width: w,
             height: h,
             layers: [
-                { geometry: 'point', mapping: { x: 'd', y: 'r' } },
+                { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
                 { geometry: 'line', mapping: { x: 'd', y: 'r' } },
             ],
             scales: [ { type: 'log', aesthetic: 'y' } ]

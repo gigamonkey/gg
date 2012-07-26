@@ -202,19 +202,23 @@
             .attr('stroke-width', 2);
     };
 
-    function IntervalGeometry () { return this; }
+    function IntervalGeometry (spec) {
+        this.width = spec.width || 5;
+        return this;
+    }
 
     IntervalGeometry.prototype = new Geometry();
 
     IntervalGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
+        var width = this.width;
         var rect = svg.append('g').selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
-            .attr('x', function (d) { return layer.scaledValue(d, 'x') - 2.5; })
+            .attr('x', function (d) { return layer.scaledValue(d, 'x') - width/2; })
             .attr('y', function (d) { return layer.scaledValue(d, 'y'); })
-            .attr('width', 5)
+            .attr('width', width)
             .attr('height', function (d) { return layer.scaledMin('y') - layer.scaledValue(d, 'y'); });
     };
 
@@ -295,7 +299,9 @@
 
     function CategoricalScale () {
         this.d3Scale = d3.scale.ordinal();
-        this.padding = .5;
+        // Setting padding to 1 seems to be required to get bars to
+        // line up with axis ticks. Needs more investigation.
+        this.padding = 1;
         return this;
     }
 
