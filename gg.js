@@ -14,7 +14,7 @@
         return this;
     }
 
-    var padding = 20;
+    var padding = 25;
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
