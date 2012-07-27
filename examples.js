@@ -5,33 +5,20 @@
 
     $(document).ready(function() {
 
-        function ex () { return d3.select('#examples').append('span'); }
-
-        var w = 300;
-        var h = 200;
-
         // Define graphics ...
         var scatterplot = gg({
-            width: w,
-            height: h,
             layers: [{ geometry: 'point', mapping: { x: 'd', y: 'r' } }]
         });
 
         var linechart = gg({
-            width: w,
-            height: h,
             layers: [{ geometry: 'line', mapping: { x: 'd', y: 'r' } }]
         });
 
         var barchart = gg({
-            width: w,
-            height: h,
             layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 }]
         });
 
         var histogram = gg({
-            width: w,
-            height: h,
             layers: [{
                 geometry: 'interval',
                 mapping: { x: 'group', y: 'count' },
@@ -44,9 +31,7 @@
             ]
         });
 
-        var combined_points_and_line = gg({
-            width: w,
-            height: h,
+        var combined = gg({
             layers: [
                 { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
                 { geometry: 'line', mapping: { x: 'd', y: 'r' } },
@@ -54,9 +39,7 @@
             ],
         });
 
-        var semi_log_scale = gg({
-            width: w,
-            height: h,
+        var semilog = gg({
             layers: [
                 { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
                 { geometry: 'line', mapping: { x: 'd', y: 'r' } },
@@ -65,8 +48,6 @@
         });
 
         var heightHistogram = gg({
-            width: w,
-            height: h,
             layers: [
                 {
                     geometry: 'interval',
@@ -81,14 +62,10 @@
         });
 
         var heightWeightScatter = gg({
-            width: w,
-            height: h,
             layers: [{ geometry: 'point', mapping: { x: 'height', y: 'weight' }, size: 1 }]
         });
 
         var boxplot = gg({
-            width: w,
-            height: h,
             layers: [ {
                 geometry: 'box',
                 mapping: { x: 'group', y: false },
@@ -99,18 +76,21 @@
             ]
         });
 
-
         // ... and render 'em
-        scatterplot.render(ex(), gg.sampleData.upward);
-        linechart.render(ex(), gg.sampleData.upward);
-        barchart.render(ex(), gg.sampleData.upward);
-        histogram.render(ex(), gg.sampleData.purchases);
-        combined_points_and_line.render(ex(), gg.sampleData.upward);
-        semi_log_scale.render(ex(), gg.sampleData.semiLogData);
-        heightHistogram.render(ex(), gg.sampleData.heightWeight);
-        heightWeightScatter.render(ex(), gg.sampleData.heightWeight);
-        boxplot.render(ex(), gg.sampleData.forBoxPlots);
+        var data = gg.sampleData;
+        var w    = 300;
+        var h    = 200;
+        var ex   = function () { return d3.select('#examples').append('span'); }
 
+        scatterplot.render(w, h, ex(), data.upward);
+        linechart.render(w, h, ex(), data.upward);
+        barchart.render(w, h, ex(), data.upward);
+        histogram.render(w, h, ex(), data.purchases);
+        combined.render(w, h, ex(), data.upward);
+        semilog.render(w, h, ex(), data.semiLogData);
+        heightHistogram.render(w, h, ex(), data.heightWeight);
+        heightWeightScatter.render(w, h, ex(), data.heightWeight);
+        boxplot.render(w, h, ex(), data.forBoxPlots);
 
     });
 

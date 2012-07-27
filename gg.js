@@ -36,9 +36,12 @@
         return key(_.max(this.layers, key));
     }
 
-    Graphic.prototype.render = function (where, data) {
+    Graphic.prototype.render = function (width, height, where, data) {
         // Render the graphic using the given data into the given HTML
         // element (a div or span usually).
+        this.width = width;
+        this.height = height;
+
         this.svg = where.append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
@@ -623,14 +626,11 @@
 
     function gg (spec) {
         var g = new Graphic();
-        g.width = spec.width;
-        g.height = spec.height;
         _.each(spec.layers, function (s) { g.layer(makeLayer(s, g)); });
         _.each(spec.scales, function (s) { g.scale(makeScale(s)); });
         return g;
     }
 
     exports.gg = gg;
-
 
 })(window);
