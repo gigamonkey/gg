@@ -1,7 +1,7 @@
-gog
+gg
 ===
 
-Hack Week project to make in-Javascript DSL for The Grammar of Graphics.
+Etsy Hack Week project to make in-Javascript DSL for The Grammar of Graphics.
 
 Some ideas of things to do next:
 
@@ -14,3 +14,6 @@ Some ideas of things to do next:
 - Regularize/rationalize/document use of CSS for controlling appearence.
 
 - In-browser interactive graph builder. (REPL?)
+
+
+*Want to hack data or something else at Etsy? Email me or see [http://www.etsy.com/careers/](http://www.etsy.com/careers/)*
