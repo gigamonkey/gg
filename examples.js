@@ -1,76 +1,5 @@
 ;(function () {
 
-    // Generate some random data.
-    var data = (function () {
-        var data = [];
-        var x = 0;
-        var y = 0;
-        _.times(20, function () {
-            x += Math.random() * 30;
-            y += 20 - Math.random() * 30;
-            data.push({
-                d: x,
-                r: y,
-            });
-        });
-        return data;
-    }());
-
-    // Generate some random data for plotting semi-log.
-    var semiLogData = (function () {
-        var data = [];
-        var x = 0;
-        var y = 1;
-        _.times(20, function () {
-            x += Math.random() * 30;
-            y *= Math.random() * 5;
-            data.push({
-                d: x,
-                r: y,
-            });
-        });
-        return data;
-    }());
-
-
-    // Some categorical data
-    var categoricalData = [
-        { category: 'foo',  count: 100 },
-        { category: 'bar',  count: 59 },
-        { category: 'baz',  count: 212 },
-        { category: 'quux', count: 76 }
-    ];
-
-    // Some random variables.
-    var randomHeight   = d3.random.normal(66, 18);
-    var randomBMI      = d3.random.normal(21.75, 3);
-    var standardNormal = d3.random.normal();
-
-    // bmi = lbs/inches^2 * 703.06958
-    // lbs = bmi * inches^2 / 703.06958
-
-    // Some data to be plotted with a histograpm
-    var heightWeight = (function () {
-        var data = [];
-        _.times(20000, function () {
-            var inches = randomHeight();
-            var lbs    = randomBMI() * inches * inches / 703.06958;
-            data.push({
-                // These should really be correlated.
-                height: inches,
-                weight: lbs,
-            });
-        });
-        return data;
-    }());
-
-    var normalData = _.map(_.range(20000), function (i) { return { v: standardNormal() }; });
-
-    var boxPlotData = [
-        { group: 'a', 'median': 200, 'q1': 50, 'q3': 275, 'lower': 25, 'upper': 360, 'outliers': [ -200, -175, 0, 10, 400, 500 ] },
-        { group: 'b', 'median': 350, 'q1': 60, 'q3': 375, 'lower': 20, 'upper': 500, 'outliers': [ -150, -100, 0, 5, 550, 575, 650 ] },
-    ];
-
     $(document).ready(function() {
 
         function ex () { return d3.select('#examples').append('span'); }
@@ -176,16 +105,16 @@
         });
 
         // ... and render 'em
-        scatterplot.render(ex(), data);
-        linechart.render(ex(), data);
-        barchart.render(ex(), data);
-        histogram.render(ex(), categoricalData);
-        combined_points_and_line.render(ex(), data);
-        semi_log_scale.render(ex(), semiLogData);
-        heightHistogram.render(ex(), heightWeight);
-        heightWeightScatter.render(ex(), heightWeight);
-        //normalHistogram.render(ex(), normalData);
-        boxPlot.render(ex(), boxPlotData);
+        scatterplot.render(ex(), ggData.data);
+        linechart.render(ex(), ggData.data);
+        barchart.render(ex(), ggData.data);
+        histogram.render(ex(), ggData.categoricalData);
+        combined_points_and_line.render(ex(), ggData.data);
+        semi_log_scale.render(ex(), ggData.semiLogData);
+        heightHistogram.render(ex(), ggData.heightWeight);
+        heightWeightScatter.render(ex(), ggData.heightWeight);
+        //normalHistogram.render(ex(), ggData.normalData);
+        boxPlot.render(ex(), ggData.boxPlotData);
 
     });
 
