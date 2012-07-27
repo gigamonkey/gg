@@ -32,10 +32,15 @@
         var histogram = gg({
             width: w,
             height: h,
-            layers: [{ geometry: 'interval', mapping: { x: 'category', y: 'count' }, width: 20 }],
+            layers: [{
+                geometry: 'interval',
+                mapping: { x: 'group', y: 'count' },
+                width: 20,
+                statistic: { kind: 'sum', group: 'who', variable: 'purchases' },
+            }],
             scales: [
                 { type: 'categorical', aesthetic: 'x' },
-                { type: 'linear', aesthetic: 'y', min: 0 }
+                { type: 'linear', aesthetic: 'y', min: 0 },
             ]
         });
 
@@ -81,33 +86,7 @@
             layers: [{ geometry: 'point', mapping: { x: 'height', y: 'weight' }, size: 1 }]
         });
 
-        var normalHistogram = gg({
-            width: w,
-            height: h,
-            layers: [
-                {
-                    geometry: 'interval',
-                    mapping: { x: 'bin', y: 'count' },
-                    statistic: { kind: 'bin', variable: 'v', binsize: .2},
-                }
-            ],
-            scales: [
-                { type: 'categorical', aesthetic: 'x' },
-                { type: 'linear', aesthetic: 'y', min: 0 }
-            ]
-        });
-
-        var boxPlot = gg({
-            width: w,
-            height: h,
-            layers: [ { geometry: 'box', mapping: { x: 'group', y: false } } ],
-            scales: [
-                { type: 'categorical', aesthetic: 'x' },
-                { type: 'linear', aesthetic: 'y', min: -300, max: 700 }
-            ],
-        });
-
-        var boxPlot2 = gg({
+        var boxplot = gg({
             width: w,
             height: h,
             layers: [ {
@@ -120,36 +99,18 @@
             ]
         });
 
-        var categoricalHistogram = gg({
-            width: w,
-            height: h,
-            layers: [{
-                geometry: 'interval',
-                mapping: { x: 'group', y: 'count' },
-                width: 20,
-                statistic: { kind: 'sum', group: 'who', variable: 'purchases' },
-            }],
-            scales: [
-                { type: 'categorical', aesthetic: 'x' },
-                { type: 'linear', aesthetic: 'y', min: 0 },
-            ]
-        });
 
         // ... and render 'em
-        scatterplot.render(ex(), ggData.data);
-        linechart.render(ex(), ggData.data);
-        barchart.render(ex(), ggData.data);
-        categoricalHistogram.render(ex(), ggData.forCategoricalHistogram);
-        combined_points_and_line.render(ex(), ggData.data);
-        semi_log_scale.render(ex(), ggData.semiLogData);
-        heightHistogram.render(ex(), ggData.heightWeight);
-        heightWeightScatter.render(ex(), ggData.heightWeight);
-        boxPlot2.render(ex(), ggData.dataForBoxPlots);
+        scatterplot.render(ex(), gg.sampleData.upward);
+        linechart.render(ex(), gg.sampleData.upward);
+        barchart.render(ex(), gg.sampleData.upward);
+        histogram.render(ex(), gg.sampleData.purchases);
+        combined_points_and_line.render(ex(), gg.sampleData.upward);
+        semi_log_scale.render(ex(), gg.sampleData.semiLogData);
+        heightHistogram.render(ex(), gg.sampleData.heightWeight);
+        heightWeightScatter.render(ex(), gg.sampleData.heightWeight);
+        boxplot.render(ex(), gg.sampleData.forBoxPlots);
 
-        // Old graphs.
-        //normalHistogram.render(ex(), ggData.normalData);
-        //boxPlot.render(ex(), ggData.boxPlotData);
-        //histogram.render(ex(), ggData.categoricalData);
 
     });
 
