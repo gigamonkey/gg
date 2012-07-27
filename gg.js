@@ -14,6 +14,7 @@
         return this;
     }
 
+    // This should obviously not be hard-wired here.
     var padding = 25;
 
     Graphic.prototype.rangeFor = function (aesthetic) {
@@ -458,8 +459,8 @@
 
     function makeStatistic (spec) {
         return new {
-            identity: Identity,
-            bin: Bin,
+            identity: IdentityStatistic,
+            bin: BinStatistic,
             box: BoxPlotStatistic,
             sum: SumStatistic,
         }[spec.kind](spec);
@@ -471,21 +472,21 @@
 
     function Statistic () { return this; }
 
-    function Identity () { return this; }
+    function IdentityStatistic () { return this; }
 
-    Identity.prototype = new Statistic();
+    IdentityStatistic.prototype = new Statistic();
 
-    Identity.prototype.compute = function (data) { return data; }
+    IdentityStatistic.prototype.compute = function (data) { return data; }
 
-    function SumStatistic (spec) {
-        this.group    = spec.group || false;
+    function BinStatistic (spec) {
         this.variable = spec.variable;
+        this.binsize  = spec.binsize || 10;
         return this;
     }
 
-    Bin.prototype = new Statistic();
+    BinStatistic.prototype = new Statistic();
 
-    Bin.prototype.compute = function (data) {
+    BinStatistic.prototype.compute = function (data) {
         // Loop through the data counting the number of occurrences of
         // each value of a given variable (for categorical values) or
         // the number of values that fall in bins of a given size.
@@ -503,27 +504,10 @@
         });
     };
 
-
-    function BoxPlotStatistic (spec) {
-        this.group = spec.group || false;
-        this.variable = spec.variable || 'value';
+    function SumStatistic (spec) {
+        this.group    = spec.group || false;
+        this.variable = spec.variable;
         return this;
-    }
-
-    function splitByGroups (data, group, variable) {
-        var groups = {};
-        if (group) {
-            // Split values by group, if supplied.
-            _.each(data, function (d) {
-                var g = d[group];
-                if (! groups[g]) { groups[g] = []; }
-                groups[g].push(d[variable]);
-            }, this);
-        } else {
-            // Or put all data in one 'data' group.
-            groups['data'] = _.pluck(data, variable);
-        }
-        return groups;
     }
 
     SumStatistic.prototype = new Statistic();
@@ -541,9 +525,9 @@
         });
     };
 
-    function Bin (spec) {
-        this.variable = spec.variable;
-        this.binsize  = spec.binsize || 10;
+    function BoxPlotStatistic (spec) {
+        this.group = spec.group || false;
+        this.variable = spec.variable || 'value';
         return this;
     }
 
@@ -620,6 +604,22 @@
             return r;
         });
     };
+
+    function splitByGroups (data, group, variable) {
+        var groups = {};
+        if (group) {
+            // Split values by group, if supplied.
+            _.each(data, function (d) {
+                var g = d[group];
+                if (! groups[g]) { groups[g] = []; }
+                groups[g].push(d[variable]);
+            }, this);
+        } else {
+            // Or put all data in one 'data' group.
+            groups['data'] = _.pluck(data, variable);
+        }
+        return groups;
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // API
