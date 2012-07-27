@@ -564,14 +564,15 @@
             // q1 and q3. Unfortunately, using d3.quantiles means we
             // don't know what the indices of q1 and q3 are.
             _.each(values, function (v) {
-                if (v < lowerFence) {
+                if (v < lowerFence || v > upperFence) {
+                    // outside the fences
                     outliers.push(v);
-                } else if (lowerFence <= v && v < lower) {
+                } else if (v < lower) {
+                    // inside fences and less than than current lower
                     lower = v;
-                } else if (upperFence >= v && v > upper) {
+                } else if (v > upper) {
+                    // inside fences and more than than current upper
                     upper = v;
-                } else if (v > upperFence) {
-                    outliers.push(v);
                 }
             });
 
