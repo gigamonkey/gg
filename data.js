@@ -76,16 +76,29 @@
 
     // Data intended to be digested for box plotting.
     ggData.dataForBoxPlots = (function () {
-        var names = ['a', 'b', 'c', 'd' ];
-        var randomMeans = d3.random.normal(500, 20);
-        var randomStddevs = d3.random.normal(50, 10);
+        var names         = ['a', 'b', 'c', 'd' ];
+        var randomMeans   = d3.random.normal(500, 100);
+        var randomStddevs = d3.random.normal(150, 20);
+        var outlierRates  = d3.random.normal(.01, .001);
+
+        function makeRNG (mean, stddev, outlierRate) {
+            var baseRNG = d3.random.normal(mean, stddev);
+            return function () {
+                var r = baseRNG();
+                var sign = Math.abs(r - mean) / (r - mean);
+                return (Math.random() < outlierRate)
+                    ? r + (sign * stddev * (3 + Math.random() * 2)) : r;
+            }
+        }
+
         var groups = _.map(names, function (n) {
             return {
                 name: n,
-                rng: d3.random.normal(randomMeans(), randomStddevs())
+                rng: makeRNG(randomMeans(), Math.abs(randomStddevs()), Math.abs(outlierRates()))
             }
         });
-        return _.map(_.range(20), function () {
+
+        return _.map(_.range(2000), function () {
             var g = groups[Math.floor(Math.random() * groups.length)];
             return {
                 grade: g.name,
