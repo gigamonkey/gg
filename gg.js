@@ -509,15 +509,16 @@
     BoxPlotStatistic.prototype = new Statistic();
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
-        var extremes = [];
-        _.each(_.pluck(data, 'outliers'), function (o) { extremes = extremes.concat(o); });
-        _.each(_.pluck(data, 'lower'), function (v) { extremes.push(v); });
-        _.each(_.pluck(data, 'upper'), function (v) { extremes.push(v); });
-        return d3.extent(extremes);
+        return [
+            _.min(_.pluck(data, 'min')),
+            _.max(_.pluck(data, 'max'))
+        ];
     }
 
     BoxPlotStatistic.prototype.compute = function (data) {
-        // For each group in the data we return an object with
+        // Split data by the group variable (if provided) and for each
+        // group return an object with:
+        //
         // {
         //   group:    <name of group ('data' if no group variable specified))>,
         //   median:   <median value>,
@@ -526,6 +527,8 @@
         //   upper:    <highest value within 1.5 IQR of q3>,
         //   lower:    <lowest value within 1.5 IQR of q1>,
         //   outliers: <list of values less than lower or greater than upper>
+        //   min:      <the single minimum value>
+        //   max:      <the single maximum value>
         // }
 
         var groups = {};
@@ -549,6 +552,8 @@
             var q3       = d3.quantile(values, .75);
             var lower    = q1;
             var upper    = q3;
+            var min      = values[0];
+            var max      = values[values.length - 1];
             var outliers = [];
 
             var fenceRange = 1.5 * (q3 - q1);
@@ -556,11 +561,18 @@
             var upperFence = q3 + fenceRange;
 
             // This could be smarter if we only look at values outside
-            // q1 and q3.
+            // q1 and q3. Unfortunately, using d3.quantiles means we
+            // don't know what the indices of q1 and q3 are.
             _.each(values, function (v) {
-                if (v >= lowerFence && v < lower) lower = v;
-                if (v <= upperFence && v > upper) upper = v;
-                if (v < lowerFence || v > upperFence) outliers.push(v);
+                if (v < lowerFence) {
+                    outliers.push(v);
+                } else if (lowerFence <= v && v < lower) {
+                    lower = v;
+                } else if (upperFence >= v && v > upper) {
+                    upper = v;
+                } else if (v > upperFence) {
+                    outliers.push(v);
+                }
             });
 
             var r = {
@@ -570,7 +582,9 @@
                 q3:       q3,
                 lower:    lower,
                 upper:    upper,
-                outliers: outliers
+                outliers: outliers,
+                min:      min,
+                max:      max,
             };
             return r;
         });
