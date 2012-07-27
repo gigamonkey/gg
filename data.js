@@ -74,6 +74,27 @@
         { group: 'b', 'median': 350, 'q1': 60, 'q3': 375, 'lower': 20, 'upper': 500, 'outliers': [ -150, -100, 0, 5, 550, 575, 650 ] },
     ];
 
+    ggData.forCategoricalHistogram = (function () {
+        var names = [ 'foo', 'bar', 'baz', 'quux' ];
+        var randomMeans = d3.random.normal(200, 10);
+        var groups = _.map(names, function (n) {
+            var mean = randomMeans();
+            return {
+                name: n,
+                rng: d3.random.normal(mean, mean/3)
+            }
+        });
+
+        return _.map(_.range(20), function () {
+            var g = groups[Math.floor(Math.random() * groups.length)];
+            return {
+                who: g.name,
+                purchases: Math.round(Math.max(0, g.rng()))
+            };
+        });
+    }());
+
+
     // Data intended to be digested for box plotting.
     ggData.dataForBoxPlots = (function () {
         var names         = ['a', 'b', 'c', 'd' ];

@@ -458,6 +458,7 @@
             identity: Identity,
             bin: Bin,
             box: BoxPlotStatistic,
+            sum: SumStatistic,
         }[spec.kind](spec);
     }
 
@@ -473,9 +474,9 @@
 
     Identity.prototype.compute = function (data) { return data; }
 
-    function Bin (spec) {
+    function SumStatistic (spec) {
+        this.group    = spec.group || false;
         this.variable = spec.variable;
-        this.binsize  = spec.binsize || 10;
         return this;
     }
 
@@ -506,6 +507,43 @@
         return this;
     }
 
+    function splitByGroups (data, group, variable) {
+        var groups = {};
+        if (group) {
+            // Split values by group, if supplied.
+            _.each(data, function (d) {
+                var g = d[group];
+                if (! groups[g]) { groups[g] = []; }
+                groups[g].push(d[variable]);
+            }, this);
+        } else {
+            // Or put all data in one 'data' group.
+            groups['data'] = _.pluck(data, variable);
+        }
+        return groups;
+    }
+
+    SumStatistic.prototype = new Statistic();
+
+    SumStatistic.prototype.compute = function (data) {
+        var groups = splitByGroups(data, this.group, this.variable);
+        return _.map(groups, function (values, name) {
+            return {
+                group: name,
+                count: values.length,
+                sum: d3.sum(values),
+                min: d3.min(values),
+                max: d3.max(values),
+            }
+        });
+    };
+
+    function Bin (spec) {
+        this.variable = spec.variable;
+        this.binsize  = spec.binsize || 10;
+        return this;
+    }
+
     BoxPlotStatistic.prototype = new Statistic();
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
@@ -513,7 +551,7 @@
             _.min(_.pluck(data, 'min')),
             _.max(_.pluck(data, 'max'))
         ];
-    }
+    };
 
     BoxPlotStatistic.prototype.compute = function (data) {
         // Split data by the group variable (if provided) and for each
@@ -531,18 +569,7 @@
         //   max:      <the single maximum value>
         // }
 
-        var groups = {};
-        if (this.group) {
-            // Split values by group, if supplied.
-            _.each(data, function (d) {
-                var g = d[this.group];
-                if (! groups[g]) { groups[g] = []; }
-                groups[g].push(d[this.variable]);
-            }, this);
-        } else {
-            // Or put all data in one 'data' group.
-            groups['data'] = _.pluck(data, this.variable);
-        }
+        var groups = splitByGroups(data, this.group, this.variable);
 
         return _.map(groups, function (values, name) {
             values.sort(d3.ascending);

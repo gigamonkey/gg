@@ -120,18 +120,36 @@
             ]
         });
 
+        var categoricalHistogram = gg({
+            width: w,
+            height: h,
+            layers: [{
+                geometry: 'interval',
+                mapping: { x: 'group', y: 'count' },
+                width: 20,
+                statistic: { kind: 'sum', group: 'who', variable: 'purchases' },
+            }],
+            scales: [
+                { type: 'categorical', aesthetic: 'x' },
+                { type: 'linear', aesthetic: 'y', min: 0 },
+            ]
+        });
+
         // ... and render 'em
         scatterplot.render(ex(), ggData.data);
         linechart.render(ex(), ggData.data);
         barchart.render(ex(), ggData.data);
-        histogram.render(ex(), ggData.categoricalData);
+        categoricalHistogram.render(ex(), ggData.forCategoricalHistogram);
         combined_points_and_line.render(ex(), ggData.data);
         semi_log_scale.render(ex(), ggData.semiLogData);
         heightHistogram.render(ex(), ggData.heightWeight);
         heightWeightScatter.render(ex(), ggData.heightWeight);
+        boxPlot2.render(ex(), ggData.dataForBoxPlots);
+
+        // Old graphs.
         //normalHistogram.render(ex(), ggData.normalData);
         //boxPlot.render(ex(), ggData.boxPlotData);
-        boxPlot2.render(ex(), ggData.dataForBoxPlots);
+        //histogram.render(ex(), ggData.categoricalData);
 
     });
 
