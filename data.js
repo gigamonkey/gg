@@ -82,13 +82,13 @@
         var groups = _.map(names, function (n) {
             return {
                 name: n,
-                rng: d3.random.normal(randomMeans(), randomStddevs)
+                rng: d3.random.normal(randomMeans(), randomStddevs())
             }
         });
-        return _.map(_.range(20000), function () {
+        return _.map(_.range(20), function () {
             var g = groups[Math.floor(Math.random() * groups.length)];
             return {
-                group: g.name,
+                grade: g.name,
                 value: g.rng()
             };
         });

@@ -150,15 +150,23 @@
     };
 
     Layer.prototype.dataMin = function (data, aesthetic) {
-        var e = this;
-        function key (d) { return e.dataValue(d, aesthetic); }
-        return key(_.min(data, key));
+        if (this.mappings[aesthetic]) {
+            var e = this;
+            function key (d) { return e.dataValue(d, aesthetic); }
+            return key(_.min(data, key));
+        } else {
+            return this.statistic.dataRange(data)[0];
+        }
     };
 
     Layer.prototype.dataMax = function (data, aesthetic) {
-        var e = this;
-        function key (d) { return e.dataValue(d, aesthetic); }
-        return key(_.max(data, key));
+        if (this.mappings[aesthetic]) {
+            var e = this;
+            function key (d) { return e.dataValue(d, aesthetic); }
+            return key(_.max(data, key));
+        } else {
+            return this.statistic.dataRange(data)[1];
+        }
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -449,6 +457,7 @@
         return new {
             identity: Identity,
             bin: Bin,
+            box: BoxPlotStatistic,
         }[spec.kind](spec);
     }
 
@@ -472,10 +481,6 @@
 
     Bin.prototype = new Statistic();
 
-    // Cannonical histogram. We have height/weight data for a few
-    // thousand people. We want to see the distribution of weights so
-    // we make a histogram of the number of people's whose weights
-    // fall in 10lb bins => [ { min: 0, max: 10, count: 0 }, {min: 10, max: 20, count: 0 }, ... ]
     Bin.prototype.compute = function (data) {
         // Loop through the data counting the number of occurrences of
         // each value of a given variable (for categorical values) or
@@ -489,12 +494,87 @@
             }
             bins[bin]++;
         }, this);
-        var result = _.map(bins, function (count, bin) {
+        return _.map(bins, function (count, bin) {
             return { bin: bin, count: count };
         });
-        return result;
     };
 
+
+    function BoxPlotStatistic (spec) {
+        this.group = spec.group || false;
+        this.variable = spec.variable || 'value';
+        return this;
+    }
+
+    BoxPlotStatistic.prototype = new Statistic();
+
+    BoxPlotStatistic.prototype.dataRange = function (data) {
+        var extremes = [];
+        _.each(_.pluck(data, 'outliers'), function (o) { extremes = extremes.concat(o); });
+        _.each(_.pluck(data, 'lower'), function (v) { extremes.push(v); });
+        _.each(_.pluck(data, 'upper'), function (v) { extremes.push(v); });
+        return d3.extent(extremes);
+    }
+
+    BoxPlotStatistic.prototype.compute = function (data) {
+        // For each group in the data we return an object with
+        // {
+        //   group:    <name of group ('data' if no group variable specified))>,
+        //   median:   <median value>,
+        //   q1:       <first quartile value>,
+        //   q3:       <third quartile value>,
+        //   upper:    <highest value within 1.5 IQR of q3>,
+        //   lower:    <lowest value within 1.5 IQR of q1>,
+        //   outliers: <list of values less than lower or greater than upper>
+        // }
+
+        var groups = {};
+        if (this.group) {
+            // Split values by group, if supplied.
+            _.each(data, function (d) {
+                var g = d[this.group];
+                if (! groups[g]) { groups[g] = []; }
+                groups[g].push(d[this.variable]);
+            }, this);
+        } else {
+            // Or put all data in one 'data' group.
+            groups['data'] = _.pluck(data, this.variable);
+        }
+
+        return _.map(groups, function (values, name) {
+            values.sort(d3.ascending);
+
+            var q1       = d3.quantile(values, .25);
+            var median   = d3.quantile(values, .5);
+            var q3       = d3.quantile(values, .75);
+            var lower    = q1;
+            var upper    = q3;
+            var outliers = [];
+
+            var fenceRange = 1.5 * (q3 - q1);
+            var lowerFence = q1 - fenceRange;
+            var upperFence = q3 + fenceRange;
+
+            // This could be smarter if we only look at values outside
+            // q1 and q3.
+            _.each(values, function (v) {
+                if (v >= lowerFence && v < lower) lower = v;
+                if (v <= upperFence && v > upper) upper = v;
+                if (v < lowerFence || v > upperFence) outliers.push(v);
+            });
+
+            var r = {
+                group:    name,
+                q1:       q1,
+                median:   median,
+                q3:       q3,
+                lower:    lower,
+                upper:    upper,
+                outliers: outliers
+            };
+            return r;
+        });
+    };
 
     ////////////////////////////////////////////////////////////////////////
     // API

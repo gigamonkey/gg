@@ -97,11 +97,24 @@
         var boxPlot = gg({
             width: w,
             height: h,
-            layers: [ { geometry: 'box', mapping: { x: 'group', y: null } } ],
+            layers: [ { geometry: 'box', mapping: { x: 'group', y: false } } ],
             scales: [
                 { type: 'categorical', aesthetic: 'x' },
                 { type: 'linear', aesthetic: 'y', min: -300, max: 700 }
             ],
+        });
+
+        var boxPlot2 = gg({
+            width: w,
+            height: h,
+            layers: [ {
+                geometry: 'box',
+                mapping: { x: 'group', y: false },
+                statistic: { kind: 'box', group: 'grade', variable: 'value' },
+            }],
+            scales: [
+                { type: 'categorical', aesthetic: 'x' },
+            ]
         });
 
         // ... and render 'em
@@ -114,7 +127,8 @@
         heightHistogram.render(ex(), ggData.heightWeight);
         heightWeightScatter.render(ex(), ggData.heightWeight);
         //normalHistogram.render(ex(), ggData.normalData);
-        boxPlot.render(ex(), ggData.boxPlotData);
+        //boxPlot.render(ex(), ggData.boxPlotData);
+        boxPlot2.render(ex(), ggData.dataForBoxPlots);
 
     });
 
