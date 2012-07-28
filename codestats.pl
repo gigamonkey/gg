@@ -31,7 +31,7 @@ foreach (@loglines) {
     $lines =~ s/\s*(\S+)\s*/$1/;
 
     #print "/* $subject files: @files */\n";
-    print "  { utc: $utc, lines: $lines }\n";
+    print "  { utc: $utc, lines: $lines },\n";
     system("git co master 2> /dev/null") == 0 or die "checkout failed: $?";
 }
 print "];\n";
