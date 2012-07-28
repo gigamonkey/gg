@@ -29,7 +29,7 @@ foreach (@loglines) {
     my $lines = @files ? `cat @files | wc -l` : '0';
     $lines =~ s/\s*(\S+)\s*/$1/;
 
-    print "/* $subject files: @files */\n";
+    #print "/* $subject files: @files */\n";
     print "{ commit: '$sha', utc: $utc, lines: $lines }\n";
     system("git co master 2> /dev/null") == 0 or die "checkout failed: $?";
 }
