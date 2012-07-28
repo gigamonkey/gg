@@ -480,27 +480,17 @@
 
     function BinStatistic (spec) {
         this.variable = spec.variable;
-        this.binsize  = spec.binsize || 10;
+        this.bins     = spec.bins || 20;
         return this;
     }
 
     BinStatistic.prototype = new Statistic();
 
     BinStatistic.prototype.compute = function (data) {
-        // Loop through the data counting the number of occurrences of
-        // each value of a given variable (for categorical values) or
-        // the number of values that fall in bins of a given size.
         var values = _.pluck(data, this.variable);
-        var bins = {};
-        _.each(values, function (v) {
-            var bin = Math.ceil(v / this.binsize);
-            if (bins[bin] === _undefined) {
-                bins[bin] = 0;
-            }
-            bins[bin]++;
-        }, this);
-        return _.map(bins, function (count, bin) {
-            return { bin: bin, count: count };
+        var bins = d3.layout.histogram().bins(this.bins)(values);
+        return _.map(bins, function (bin, i) {
+            return { bin: i, count: bin.y };
         });
     };
 

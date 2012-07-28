@@ -53,7 +53,7 @@
                 {
                     geometry: 'interval',
                     mapping: { x: 'bin', y: 'count' },
-                    statistic: { kind: 'bin', variable: 'height', binsize: 4},
+                    statistic: { kind: 'bin', variable: 'height', bins: 30 },
                 }
             ],
             scales: [
