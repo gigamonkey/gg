@@ -16,6 +16,7 @@ open(IN, "git log --pretty='format:%H %at %s' |") or die $!;
 my @loglines = <IN>;
 close IN;
 
+print "var codestats = [\n";
 foreach (@loglines) {
     chomp;
     my ($sha, $utc, $subject) = split ' ', $_, 3;
@@ -30,8 +31,9 @@ foreach (@loglines) {
     $lines =~ s/\s*(\S+)\s*/$1/;
 
     #print "/* $subject files: @files */\n";
-    print "{ commit: '$sha', utc: $utc, lines: $lines }\n";
+    print "  { utc: $utc, lines: $lines }\n";
     system("git co master 2> /dev/null") == 0 or die "checkout failed: $?";
 }
+print "];\n";
 
 __END__
