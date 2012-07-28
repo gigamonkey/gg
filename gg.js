@@ -66,12 +66,12 @@
             .tickSize(-(this.width - (2*padding)))
             .orient('left');
 
-        this.svg.append('svg:g')
+        this.svg.append('g')
             .attr('class', 'x axis')
             .attr('transform', 'translate(0,' + (this.height - padding) + ')')
             .call(xAxis);
 
-        this.svg.append('svg:g')
+        this.svg.append('g')
             .attr('class', 'y axis')
             .attr('transform', 'translate(' + padding + ',0)')
             .call(yAxis);
