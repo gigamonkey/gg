@@ -8,14 +8,14 @@
 
     var json = JSON.stringify;
 
+    // This should obviously not be hard-wired here.
+    var padding = 25;
+
     function Graphic () {
         this.layers = [];
         this.scales = {};
         return this;
     }
-
-    // This should obviously not be hard-wired here.
-    var padding = 25;
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
@@ -90,6 +90,9 @@
         return this;
     };
 
+    ////////////////////////////////////////////////////////////////////////
+    // Layers
+
     function Layer (geometry, graphic) {
         this.geometry = geometry;
         this.graphic  = graphic;
@@ -102,6 +105,23 @@
         */
         return this;
     }
+
+    Layer.fromSpec = function (spec, graphic) {
+        var geometry = new {
+            point: PointGeometry,
+            line: LineGeometry,
+            interval: IntervalGeometry,
+            box: BoxPlotGeometry,
+        }[spec.geometry || 'point'](spec);
+
+        var layer = new Layer(geometry, graphic);
+        geometry.layer = layer;
+        spec.mapping !== _undefined && (layer.mappings = spec.mapping);
+        layer.statistic = Statistic.fromSpec(spec.statistic || { kind: 'identity' });
+        return layer;
+    };
+
+
 
     Layer.prototype.scaleFor = function (aesthetic) {
         return this.scales[aesthetic] || this.graphic.scales[aesthetic]
@@ -334,6 +354,20 @@
 
     function Scale () { return this; }
 
+    Scale.fromSpec = function (spec) {
+        var s = new {
+            linear: LinearScale,
+            log: LogScale,
+            categorical: CategoricalScale,
+        }[spec.type || 'linear'];
+
+        spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
+        spec.values !== _undefined && s.values(spec.values);
+        spec.min !== _undefined && s.min(spec.min);
+        spec.max !== _undefined && s.max(spec.max);
+        return s;
+    };
+
     Scale.default = function (aesthetic) {
         var clazz = {
             x: LinearScale,
@@ -428,49 +462,19 @@
         return this;
     }
 
-    function makeLayer (spec, graphic) {
-        var geometry = new {
-            point: PointGeometry,
-            line: LineGeometry,
-            interval: IntervalGeometry,
-            box: BoxPlotGeometry,
-        }[spec.geometry || 'point'](spec);
+    ////////////////////////////////////////////////////////////////////////
+    // Statistics
 
-        var layer = new Layer(geometry, graphic);
-        geometry.layer = layer;
-        spec.mapping !== _undefined && (layer.mappings = spec.mapping);
-        layer.statistic = makeStatistic(spec.statistic || { kind: 'identity' });
-        return layer;
-    }
+    function Statistic () { return this; }
 
-    function makeScale (spec) {
-        var s = new {
-            linear: LinearScale,
-            log: LogScale,
-            categorical: CategoricalScale,
-        }[spec.type || 'linear'];
-
-        spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
-        spec.values !== _undefined && s.values(spec.values);
-        spec.min !== _undefined && s.min(spec.min);
-        spec.max !== _undefined && s.max(spec.max);
-        return s;
-    }
-
-    function makeStatistic (spec) {
+    Statistic.fromSpec = function (spec) {
         return new {
             identity: IdentityStatistic,
             bin: BinStatistic,
             box: BoxPlotStatistic,
             sum: SumStatistic,
         }[spec.kind](spec);
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////
-    // Statistics
-
-    function Statistic () { return this; }
+    };
 
     function IdentityStatistic () { return this; }
 
@@ -616,8 +620,8 @@
 
     function gg (spec) {
         var g = new Graphic();
-        _.each(spec.layers, function (s) { g.layer(makeLayer(s, g)); });
-        _.each(spec.scales, function (s) { g.scale(makeScale(s)); });
+        _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
+        _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
         return g;
     }
 
