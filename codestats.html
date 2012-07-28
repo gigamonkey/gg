@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>gg codestats</title>
+<link rel="stylesheet" type="text/css" href="gg.css"/>
+<script src="json2.js"></script>
+<script src="jquery-1.7.2.min.js"></script>
+<script src="d3.v2.min.js"></script>
+<script src="underscore-min.js"></script>
+<script src="gg.js"></script>
+<script src="codestats.js"></script>
+<script>
+$(document).ready(function() {
+    var chart = gg({
+        layers: [
+            { geometry: 'line', mapping: { x: 'utc', y: 'lines' } },
+            { geometry: 'point', mapping: { x: 'utc', y: 'lines' }, size: 3 }
+        ],
+        //scales: [ { type: 'log', aesthetic: 'y' } ]
+    });
+    chart.render(1000, 300, d3.select('#chart'), codestats)
+});
+</script>
+</title>
+<body>
+
+<div id='chart'></div>
+
+</body>
+</html>

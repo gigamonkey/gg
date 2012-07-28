@@ -8,6 +8,7 @@ my %excludes = (
     'jquery-1.7.2.min.js' => 1,
     'json2.js'            => 1,
     'underscore-min.js'   => 1,
+    'codestats.js'        => 1,
     );
 
 system("git co master 2> /dev/null") == 0 or die "checkout failed: $?";
