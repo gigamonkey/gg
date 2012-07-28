@@ -3,6 +3,10 @@ gg
 
 Etsy Hack Week project to make in-Javascript DSL for The Grammar of Graphics.
 
+See a demo here:
+
+> [http://gigamonkey.github.com/gg/](http://gigamonkey.github.com/gg/)
+
 Some ideas of things to do next:
 
 - Color and size scales.
@@ -18,4 +22,5 @@ Some ideas of things to do next:
 - In-browser interactive graph builder. (REPL?)
 
 
-*Want to hack data or something else at Etsy? Email me or see [http://www.etsy.com/careers/](http://www.etsy.com/careers/)*
+*Want to hack data or something else at Etsy? Email me or see
+ [http://www.etsy.com/careers/](http://www.etsy.com/careers/)*
