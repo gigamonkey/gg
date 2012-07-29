@@ -85,4 +85,8 @@ var codestats = [
   { utc: 1343596851, lines: 820, author: "peter@gigamonkeys.com" },
   { utc: 1343597116, lines: 835, author: "peter@gigamonkeys.com" },
   { utc: 1343597256, lines: 835, author: "peter@etsy.com" },
+  { utc: 1343598535, lines: 835, author: "peter@etsy.com" },
+  { utc: 1343601213, lines: 835, author: "peter@etsy.com" },
+  { utc: 1343601230, lines: 835, author: "peter@etsy.com" },
+  { utc: 1343602085, lines: 906, author: "peter@etsy.com" },
 ];
