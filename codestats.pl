@@ -11,18 +11,20 @@ my %excludes = (
     'codestats.js'        => 1,
     );
 
-system("git co master 2> /dev/null") == 0 or die "checkout failed: $?";
+system("git stash &> /dev/null") == 0 or die "stash failed: $?";
+system("git co master &> /dev/null") == 0 or die "checkout failed: $?";
 
-open(IN, "git log --pretty='format:%H %at %s' |") or die $!;
+open(IN, "git log --pretty='format:%H %at %ae' |") or die $!;
 my @loglines = <IN>;
 close IN;
 
-print "var codestats = [\n";
+my @data = ();
+
 foreach (@loglines) {
     chomp;
-    my ($sha, $utc, $subject) = split ' ', $_, 3;
+    my ($sha, $utc, $author) = split ' ', $_, 4;
 
-    system("git co $sha 2> /dev/null") == 0 or die "checkout failed: $?";
+    system("git co $sha &> /dev/null") == 0 or die "checkout failed: $?";
 
     opendir(DIR, ".") or die $!;
     my @files = grep { /.js$/ and not $excludes{$_} } readdir(DIR);
@@ -31,10 +33,16 @@ foreach (@loglines) {
     my $lines = @files ? `cat @files | wc -l` : '0';
     $lines =~ s/\s*(\S+)\s*/$1/;
 
-    #print "/* $subject files: @files */\n";
-    print "  { utc: $utc, lines: $lines },\n";
-    system("git co master 2> /dev/null") == 0 or die "checkout failed: $?";
+    push @data, "{ utc: $utc, lines: $lines, author: \"$author\" },";
+    system("git co master &> /dev/null") == 0 or die "checkout failed: $?";
+}
+
+
+print "var codestats = [\n";
+foreach (sort @data) {
+    print "  $_\n";
 }
 print "];\n";
+system("git stash apply &> /dev/null") == 0 or die "stash failed: $?";
 
 __END__
