@@ -22,13 +22,14 @@
         var histogram = gg({
             layers: [{
                 geometry: 'interval',
-                mapping: { x: 'group', y: 'count' },
+                mapping: { x: 'group', y: 'count', color: 'group' },
                 width: 20,
                 statistic: { kind: 'sum', group: 'who', variable: 'purchases' },
             }],
             scales: [
                 { type: 'categorical', aesthetic: 'x' },
                 { type: 'linear', aesthetic: 'y', min: 0 },
+                { type: 'color', aesthetic: 'group' }
             ]
         });
 
