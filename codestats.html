@@ -17,15 +17,13 @@ $(document).ready(function() {
             { geometry: 'line', mapping: { x: 'utc', y: 'lines' } },
             { geometry: 'point', mapping: { x: 'utc', y: 'lines' }, size: 3 }
         ],
-        //scales: [ { type: 'log', aesthetic: 'y' } ]
     });
     chart.render(1000, 300, d3.select('#chart'), codestats)
 });
 </script>
 </title>
 <body>
-
+<h1>Lines of code in gg over time.</h1>
 <div id='chart'></div>
-
 </body>
 </html>
