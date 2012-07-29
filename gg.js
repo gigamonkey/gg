@@ -440,10 +440,6 @@
 
     ColorScale.prototype = new CategoricalScale();
 
-    ColorScale.prototype.defaultDomain = function(l, d, a) {
-        return CategoricalScale.prototype.defaultDomain.call(this, l, d, a);
-    }
-
     function makeLayer (spec, graphic) {
         var geometry = new {
             point: PointGeometry,
