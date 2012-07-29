@@ -14,7 +14,6 @@
     function Graphic () {
         this.layers = [];
         this.scales = {};
-        return this;
     }
 
     Graphic.prototype.rangeFor = function (aesthetic) {
@@ -103,7 +102,6 @@
            this.positioner = null;
            this.data       = null;
         */
-        return this;
     }
 
     Layer.fromSpec = function (spec, graphic) {
@@ -198,11 +196,10 @@
     // Graphic. They only care about scaled values which they can get
     // from their layer.
 
-    function Geometry () { return this; }
+    function Geometry () {}
 
     function PointGeometry (spec) {
         this.size = spec.size || 5;
-        return this;
     }
 
     PointGeometry.prototype = new Geometry();
@@ -218,7 +215,7 @@
             .attr('r', this.size);
     };
 
-    function LineGeometry () { return this; }
+    function LineGeometry () {}
 
     LineGeometry.prototype = new Geometry();
 
@@ -236,7 +233,6 @@
 
     function IntervalGeometry (spec) {
         this.width = spec.width || 5;
-        return this;
     }
 
     IntervalGeometry.prototype = new Geometry();
@@ -260,7 +256,6 @@
 
     function BoxPlotGeometry (spec) {
         this.width = spec.width || 10;
-        return this;
     }
 
     BoxPlotGeometry.prototype = new Geometry();
@@ -352,7 +347,7 @@
     // 'weight' which are mapped to the standard 'x' and 'y'
     // aesthetics.)
 
-    function Scale () { return this; }
+    function Scale () {}
 
     Scale.fromSpec = function (spec) {
         var s = new {
@@ -465,7 +460,7 @@
     ////////////////////////////////////////////////////////////////////////
     // Statistics
 
-    function Statistic () { return this; }
+    function Statistic () {}
 
     Statistic.fromSpec = function (spec) {
         return new {
@@ -476,7 +471,7 @@
         }[spec.kind](spec);
     };
 
-    function IdentityStatistic () { return this; }
+    function IdentityStatistic () {}
 
     IdentityStatistic.prototype = new Statistic();
 
@@ -485,7 +480,6 @@
     function BinStatistic (spec) {
         this.variable = spec.variable;
         this.bins     = spec.bins || 20;
-        return this;
     }
 
     BinStatistic.prototype = new Statistic();
@@ -501,7 +495,6 @@
     function SumStatistic (spec) {
         this.group    = spec.group || false;
         this.variable = spec.variable;
-        return this;
     }
 
     SumStatistic.prototype = new Statistic();
@@ -522,7 +515,6 @@
     function BoxPlotStatistic (spec) {
         this.group = spec.group || false;
         this.variable = spec.variable || 'value';
-        return this;
     }
 
     BoxPlotStatistic.prototype = new Statistic();
