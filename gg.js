@@ -154,7 +154,9 @@
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }
-            s.range(this.graphic.rangeFor(aesthetic));
+            if (aesthetic == 'x' || aesthetic == 'y') {
+                s.range(this.graphic.rangeFor(aesthetic));
+            }
         }, this);
     };
 
@@ -251,6 +253,10 @@
             .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)
             .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); });
+
+        if ('color' in layer.mappings) {
+            rect.style('fill', function(d) { return scale(d, 'color'); });
+        }
     };
 
 
@@ -354,6 +360,7 @@
             linear: LinearScale,
             log: LogScale,
             categorical: CategoricalScale,
+            color: ColorScale
         }[spec.type || 'linear'];
 
         spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
@@ -367,6 +374,7 @@
         var clazz = {
             x: LinearScale,
             y: LinearScale,
+            color: ColorScale
         }[aesthetic];
 
         if (! clazz) {
@@ -456,6 +464,12 @@
         this.d3Scale = this.d3Scale.rangeBands(interval, this.padding);
         return this;
     }
+
+    function ColorScale() {
+        this.d3Scale = d3.scale.category20();
+    }
+
+    ColorScale.prototype = new CategoricalScale();
 
     ////////////////////////////////////////////////////////////////////////
     // Statistics
