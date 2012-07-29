@@ -135,7 +135,9 @@
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }
-            s.range(this.graphic.rangeFor(aesthetic));
+            if (aesthetic == 'x' || aesthetic == 'y') {
+                s.range(this.graphic.rangeFor(aesthetic));
+            }
         }, this);
     };
 
@@ -234,6 +236,10 @@
             .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)
             .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); });
+
+        if ('color' in layer.mappings) {
+            rect.style('fill', function(d) { return scale(d, 'color'); });
+        }
     };
 
 
@@ -337,6 +343,7 @@
         var clazz = {
             x: LinearScale,
             y: LinearScale,
+            color: ColorScale
         }[aesthetic];
 
         if (! clazz) {
@@ -427,6 +434,16 @@
         return this;
     }
 
+    function ColorScale() {
+        this.d3Scale = d3.scale.category20();
+    }
+
+    ColorScale.prototype = new CategoricalScale();
+
+    ColorScale.prototype.defaultDomain = function(l, d, a) {
+        return CategoricalScale.prototype.defaultDomain.call(this, l, d, a);
+    }
+
     function makeLayer (spec, graphic) {
         var geometry = new {
             point: PointGeometry,
@@ -447,6 +464,7 @@
             linear: LinearScale,
             log: LogScale,
             categorical: CategoricalScale,
+            color: ColorScale
         }[spec.type || 'linear'];
 
         spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
