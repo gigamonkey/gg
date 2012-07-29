@@ -8,13 +8,14 @@
 
     var json = JSON.stringify;
 
+    // This should obviously not be hard-wired here.
+    var padding = 25;
+
     function Graphic () {
         this.layers = [];
         this.scales = {};
         return this;
     }
-
-    var padding = 25;
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
@@ -65,12 +66,12 @@
             .tickSize(-(this.width - (2*padding)))
             .orient('left');
 
-        this.svg.append('svg:g')
+        this.svg.append('g')
             .attr('class', 'x axis')
             .attr('transform', 'translate(0,' + (this.height - padding) + ')')
             .call(xAxis);
 
-        this.svg.append('svg:g')
+        this.svg.append('g')
             .attr('class', 'y axis')
             .attr('transform', 'translate(' + padding + ',0)')
             .call(yAxis);
@@ -89,6 +90,9 @@
         return this;
     };
 
+    ////////////////////////////////////////////////////////////////////////
+    // Layers
+
     function Layer (geometry, graphic) {
         this.geometry = geometry;
         this.graphic  = graphic;
@@ -101,6 +105,23 @@
         */
         return this;
     }
+
+    Layer.fromSpec = function (spec, graphic) {
+        var geometry = new {
+            point: PointGeometry,
+            line: LineGeometry,
+            interval: IntervalGeometry,
+            box: BoxPlotGeometry,
+        }[spec.geometry || 'point'](spec);
+
+        var layer = new Layer(geometry, graphic);
+        geometry.layer = layer;
+        spec.mapping !== _undefined && (layer.mappings = spec.mapping);
+        layer.statistic = Statistic.fromSpec(spec.statistic || { kind: 'identity' });
+        return layer;
+    };
+
+
 
     Layer.prototype.scaleFor = function (aesthetic) {
         return this.scales[aesthetic] || this.graphic.scales[aesthetic]
@@ -339,6 +360,21 @@
 
     function Scale () { return this; }
 
+    Scale.fromSpec = function (spec) {
+        var s = new {
+            linear: LinearScale,
+            log: LogScale,
+            categorical: CategoricalScale,
+            color: ColorScale
+        }[spec.type || 'linear'];
+
+        spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
+        spec.values !== _undefined && s.values(spec.values);
+        spec.min !== _undefined && s.min(spec.min);
+        spec.max !== _undefined && s.max(spec.max);
+        return s;
+    };
+
     Scale.default = function (aesthetic) {
         var clazz = {
             x: LinearScale,
@@ -440,104 +476,46 @@
 
     ColorScale.prototype = new CategoricalScale();
 
-    function makeLayer (spec, graphic) {
-        var geometry = new {
-            point: PointGeometry,
-            line: LineGeometry,
-            interval: IntervalGeometry,
-            box: BoxPlotGeometry,
-        }[spec.geometry || 'point'](spec);
-
-        var layer = new Layer(geometry, graphic);
-        geometry.layer = layer;
-        spec.mapping !== _undefined && (layer.mappings = spec.mapping);
-        layer.statistic = makeStatistic(spec.statistic || { kind: 'identity' });
-        return layer;
-    }
-
-    function makeScale (spec) {
-        var s = new {
-            linear: LinearScale,
-            log: LogScale,
-            categorical: CategoricalScale,
-            color: ColorScale
-        }[spec.type || 'linear'];
-
-        spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
-        spec.values !== _undefined && s.values(spec.values);
-        spec.min !== _undefined && s.min(spec.min);
-        spec.max !== _undefined && s.max(spec.max);
-        return s;
-    }
-
-    function makeStatistic (spec) {
-        return new {
-            identity: Identity,
-            bin: Bin,
-            box: BoxPlotStatistic,
-            sum: SumStatistic,
-        }[spec.kind](spec);
-    }
-
-
     ////////////////////////////////////////////////////////////////////////
     // Statistics
 
     function Statistic () { return this; }
 
-    function Identity () { return this; }
+    Statistic.fromSpec = function (spec) {
+        return new {
+            identity: IdentityStatistic,
+            bin: BinStatistic,
+            box: BoxPlotStatistic,
+            sum: SumStatistic,
+        }[spec.kind](spec);
+    };
 
-    Identity.prototype = new Statistic();
+    function IdentityStatistic () { return this; }
 
-    Identity.prototype.compute = function (data) { return data; }
+    IdentityStatistic.prototype = new Statistic();
+
+    IdentityStatistic.prototype.compute = function (data) { return data; }
+
+    function BinStatistic (spec) {
+        this.variable = spec.variable;
+        this.bins     = spec.bins || 20;
+        return this;
+    }
+
+    BinStatistic.prototype = new Statistic();
+
+    BinStatistic.prototype.compute = function (data) {
+        var values = _.pluck(data, this.variable);
+        var bins = d3.layout.histogram().bins(this.bins)(values);
+        return _.map(bins, function (bin, i) {
+            return { bin: i, count: bin.y };
+        });
+    };
 
     function SumStatistic (spec) {
         this.group    = spec.group || false;
         this.variable = spec.variable;
         return this;
-    }
-
-    Bin.prototype = new Statistic();
-
-    Bin.prototype.compute = function (data) {
-        // Loop through the data counting the number of occurrences of
-        // each value of a given variable (for categorical values) or
-        // the number of values that fall in bins of a given size.
-        var values = _.pluck(data, this.variable);
-        var bins = {};
-        _.each(values, function (v) {
-            var bin = Math.ceil(v / this.binsize);
-            if (bins[bin] === _undefined) {
-                bins[bin] = 0;
-            }
-            bins[bin]++;
-        }, this);
-        return _.map(bins, function (count, bin) {
-            return { bin: bin, count: count };
-        });
-    };
-
-
-    function BoxPlotStatistic (spec) {
-        this.group = spec.group || false;
-        this.variable = spec.variable || 'value';
-        return this;
-    }
-
-    function splitByGroups (data, group, variable) {
-        var groups = {};
-        if (group) {
-            // Split values by group, if supplied.
-            _.each(data, function (d) {
-                var g = d[group];
-                if (! groups[g]) { groups[g] = []; }
-                groups[g].push(d[variable]);
-            }, this);
-        } else {
-            // Or put all data in one 'data' group.
-            groups['data'] = _.pluck(data, variable);
-        }
-        return groups;
     }
 
     SumStatistic.prototype = new Statistic();
@@ -555,9 +533,9 @@
         });
     };
 
-    function Bin (spec) {
-        this.variable = spec.variable;
-        this.binsize  = spec.binsize || 10;
+    function BoxPlotStatistic (spec) {
+        this.group = spec.group || false;
+        this.variable = spec.variable || 'value';
         return this;
     }
 
@@ -635,13 +613,29 @@
         });
     };
 
+    function splitByGroups (data, group, variable) {
+        var groups = {};
+        if (group) {
+            // Split values by group, if supplied.
+            _.each(data, function (d) {
+                var g = d[group];
+                if (! groups[g]) { groups[g] = []; }
+                groups[g].push(d[variable]);
+            }, this);
+        } else {
+            // Or put all data in one 'data' group.
+            groups['data'] = _.pluck(data, variable);
+        }
+        return groups;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // API
 
     function gg (spec) {
         var g = new Graphic();
-        _.each(spec.layers, function (s) { g.layer(makeLayer(s, g)); });
-        _.each(spec.scales, function (s) { g.scale(makeScale(s)); });
+        _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
+        _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
         return g;
     }
 
