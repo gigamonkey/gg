@@ -98,5 +98,32 @@
         });
     }());
 
+    gg.sampleData.twoPopulations = (function () {
+
+        var groups = [
+            {
+                name: 'zorks',
+                rng1: d3.random.normal(100, 15),
+                rng2: d3.random.normal(0, .1),
+            },
+            {
+                name: 'florgs',
+                rng1: d3.random.normal(90, 20),
+                rng2: d3.random.normal(0, .2),
+            }
+        ];
+
+        return _.map(_.range(2000), function (i) {
+            var g            = groups[i % 2];
+            var intelligence = g.rng1();
+            var wisdom       = (1 + g.rng2()) * intelligence;
+            return {
+                group: g.name,
+                intelligence: intelligence,
+                wisdom: wisdom
+            };
+        });
+    }());
+
 
 })(window);

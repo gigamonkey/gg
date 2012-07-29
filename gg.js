@@ -202,6 +202,8 @@
 
     function PointGeometry (spec) {
         this.size = spec.size || 5;
+        this.alpha = spec.alpha || 1;
+        this.color = spec.color || 'black';
     }
 
     PointGeometry.prototype = new Geometry();
@@ -214,10 +216,20 @@
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
-            .attr('r', this.size);
+            .attr('r', this.size)
+            .attr('fill-opacity', this.alpha);
+
+        if ('color' in layer.mappings) {
+            circle.attr('fill', function (d) { return layer.scaledValue(d, 'color'); });
+        } else {
+            circle.attr('fill', this.color);
+        }
     };
 
-    function LineGeometry () {}
+    function LineGeometry (spec) {
+        this.color = spec.color || 'black';
+        this.width = spec.width || 2;
+    }
 
     LineGeometry.prototype = new Geometry();
 
@@ -229,12 +241,19 @@
         var polyline = svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
             .attr('fill', 'none')
-            .attr('stroke', 'black')
-            .attr('stroke-width', 2);
+            .attr('stroke-width', this.width);
+
+        if ('color' in layer.mappings) {
+            polyline.attr('stroke', function (d) { return layer.scaledValue(d, 'color'); });
+        } else {
+            polyline.attr('stroke', this.color);
+        }
+
     };
 
     function IntervalGeometry (spec) {
         this.width = spec.width || 5;
+        this.color = spec.color || 'black';
     }
 
     IntervalGeometry.prototype = new Geometry();
@@ -256,12 +275,15 @@
 
         if ('color' in layer.mappings) {
             rect.style('fill', function(d) { return scale(d, 'color'); });
+        } else {
+            rect.style('fill', this.color);
         }
     };
 
 
     function BoxPlotGeometry (spec) {
         this.width = spec.width || 10;
+        this.color = spec.color || 'black';
     }
 
     BoxPlotGeometry.prototype = new Geometry();
@@ -275,6 +297,9 @@
             return layer.scaleFor(aesthetic).scale(v);
         }
 
+        var color = ('color' in layer.mappings) ?
+            function(d) { return scale(d, 'color'); } : this.color;
+
         var boxes = svg.append('g').selectAll('g').data(data).enter();
 
         // IQR box
@@ -283,9 +308,10 @@
             .attr('x', function (d) { return scale(d.group, 'x') - width/2; })
             .attr('y', function (d) { return scale(d.q3, 'y'); })
             .attr('width', width)
-            .attr('height', function (d) {
-                return scale(d.q1, 'y') - scale(d.q3, 'y');
-            });
+            .attr('height', function (d) { return scale(d.q1, 'y') - scale(d.q3, 'y'); })
+            .attr('fill', 'none')
+            .attr('stroke', color)
+            .attr('stroke-width', 1);
 
         // median line
         boxes.append('line')
@@ -293,7 +319,9 @@
             .attr('x1', function (d) { return scale(d.group, 'x') - width/2; })
             .attr('x2', function (d) { return scale(d.group, 'x') + width/2; })
             .attr('y1', function (d) { return scale(d.median, 'y'); })
-            .attr('y2', function (d) { return scale(d.median, 'y'); });
+            .attr('y2', function (d) { return scale(d.median, 'y'); })
+            .attr('stroke', color)
+            .attr('stroke-width', 1);
 
         // upper whisker
         boxes.append('line')
@@ -301,7 +329,10 @@
             .attr('x1', function (d) { return scale(d.group, 'x'); })
             .attr('x2', function (d) { return scale(d.group, 'x'); })
             .attr('y1', function (d) { return scale(d.q3, 'y'); })
-            .attr('y2', function (d) { return scale(d.upper, 'y'); });
+            .attr('y2', function (d) { return scale(d.upper, 'y'); })
+            .attr('stroke', color)
+            .attr('stroke-width', 1);
+
 
         // upper whisker tick
         boxes.append('line')
@@ -309,7 +340,10 @@
             .attr('x1', function (d) { return scale(d.group, 'x') - (width * .4); })
             .attr('x2', function (d) { return scale(d.group, 'x') + (width * .4); })
             .attr('y1', function (d) { return scale(d.upper, 'y'); })
-            .attr('y2', function (d) { return scale(d.upper, 'y'); });
+            .attr('y2', function (d) { return scale(d.upper, 'y'); })
+            .attr('stroke', color)
+            .attr('stroke-width', 1);
+
 
         // lower whisker
         boxes.append('line')
@@ -317,7 +351,10 @@
             .attr('x1', function (d) { return scale(d.group, 'x'); })
             .attr('x2', function (d) { return scale(d.group, 'x'); })
             .attr('y1', function (d) { return scale(d.q1, 'y'); })
-            .attr('y2', function (d) { return scale(d.lower, 'y'); });
+            .attr('y2', function (d) { return scale(d.lower, 'y'); })
+            .attr('stroke', color)
+            .attr('stroke-width', 1);
+
 
         // lower whisker tick
         boxes.append('line')
@@ -325,7 +362,10 @@
             .attr('x1', function (d) { return scale(d.group, 'x') - (width * .4); })
             .attr('x2', function (d) { return scale(d.group, 'x') + (width * .4); })
             .attr('y1', function (d) { return scale(d.lower, 'y'); })
-            .attr('y2', function (d) { return scale(d.lower, 'y'); });
+            .attr('y2', function (d) { return scale(d.lower, 'y'); })
+            .attr('stroke', color)
+            .attr('stroke-width', 1);
+
 
 
         // outliers
@@ -341,7 +381,8 @@
             .attr('class', 'boxplot outliers')
             .attr('cx', function (d) { return scale(d.group, 'x'); })
             .attr('cy', function (d) { return scale(d.value, 'y'); })
-            .attr('r', 2);
+            .attr('r', 2)
+            .attr('fill', color);
     }
 
 
@@ -374,7 +415,7 @@
         var clazz = {
             x: LinearScale,
             y: LinearScale,
-            color: ColorScale
+            color: ColorScale,
         }[aesthetic];
 
         if (! clazz) {
@@ -423,17 +464,11 @@
         return this;
     }
 
-    function LinearScale () {
-        this.d3Scale = d3.scale.linear();
-        return this;
-    }
+    function LinearScale () { this.d3Scale = d3.scale.linear(); }
 
     LinearScale.prototype = new Scale();
 
-    function LogScale () {
-        this.d3Scale = d3.scale.log();
-        return this;
-    }
+    function LogScale () { this.d3Scale = d3.scale.log(); }
 
     LogScale.prototype = new Scale();
 

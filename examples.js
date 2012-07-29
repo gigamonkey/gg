@@ -12,11 +12,11 @@
         });
 
         var linechart = gg({
-            layers: [{ geometry: 'line', mapping: { x: 'd', y: 'r' } }]
+            layers: [{ geometry: 'line', mapping: { x: 'd', y: 'r' }, color: 'red' }]
         });
 
         var barchart = gg({
-            layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 }]
+            layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, color: 'blue', width: 2 }]
         });
 
         var histogram = gg({
@@ -29,7 +29,6 @@
             scales: [
                 { type: 'categorical', aesthetic: 'x' },
                 { type: 'linear', aesthetic: 'y', min: 0 },
-                { type: 'color', aesthetic: 'group' }
             ]
         });
 
@@ -78,6 +77,15 @@
             ]
         });
 
+        var twoPopulations = gg({
+            layers: [ {
+                geometry: 'point',
+                mapping: { x: 'intelligence', y: 'wisdom', color: 'group' },
+                size: 2,
+                alpha: .5,
+            }],
+        });
+
         // ... and render 'em
 
         var data = gg.sampleData;
@@ -92,7 +100,8 @@
         combined.render(w, h, ex(), data.upward);
         semilog.render(w, h, ex(), data.semiLogData);
         heightHistogram.render(w, h, ex(), data.heightWeight);
-        heightWeightScatter.render(w, h, ex(), data.heightWeight);
+        twoPopulations.render(w, h, ex(), data.twoPopulations);
+        // heightWeightScatter.render(w, h, ex(), data.heightWeight);
         boxplot.render(w, h, ex(), data.forBoxPlots);
 
     });
