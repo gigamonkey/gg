@@ -13,6 +13,8 @@ Some ideas of things to do next:
 
 - Implement positioners, especially for stacked and side-by-side bar charts.
 
+- Legends
+
 - Facets.
 
 - Coordinate systems (esp. pie charts)
