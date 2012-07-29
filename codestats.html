@@ -15,8 +15,9 @@ $(document).ready(function() {
     var chart = gg({
         layers: [
             { geometry: 'line', mapping: { x: 'utc', y: 'lines' } },
-            { geometry: 'point', mapping: { x: 'utc', y: 'lines' }, size: 3 }
+            { geometry: 'point', mapping: { x: 'utc', y: 'lines', color: 'author' }, size: 3 }
         ],
+        scales: [ { type: 'color', aesthetic: 'color' } ],
     });
     chart.render(1000, 300, d3.select('#chart'), codestats)
 });
