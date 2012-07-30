@@ -91,12 +91,10 @@
 
     Graphic.prototype.layer = function (e) {
         this.layers.push(e);
-        return this;
     };
 
     Graphic.prototype.scale = function (s) {
         this.scales[s.aesthetic] = s;
-        return this;
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -459,7 +457,6 @@
         // Setting padding to 1 seems to be required to get bars to
         // line up with axis ticks. Needs more investigation.
         this.padding = 1;
-        return this;
     }
 
     CategoricalScale.prototype = new Scale();
@@ -467,7 +464,6 @@
     CategoricalScale.prototype.values = function (values) {
         this.domainSet = true;
         this.d3Scale.domain(values);
-        return this;
     }
 
     CategoricalScale.prototype.defaultDomain = function (layer, data, aesthetic) {
@@ -479,7 +475,6 @@
 
     CategoricalScale.prototype.range = function (interval) {
         this.d3Scale = this.d3Scale.rangeBands(interval, this.padding);
-        return this;
     }
 
     function ColorScale() {
