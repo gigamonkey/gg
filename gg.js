@@ -201,7 +201,7 @@
     function Geometry () {}
 
     function PointGeometry (spec) {
-        this.size = spec.size || 5;
+        this.size  = spec.size || 5;
         this.alpha = spec.alpha || 1;
         this.color = spec.color || 'black';
     }
@@ -216,13 +216,18 @@
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
-            .attr('r', this.size)
             .attr('fill-opacity', this.alpha);
 
         if ('color' in layer.mappings) {
             circle.attr('fill', function (d) { return layer.scaledValue(d, 'color'); });
         } else {
             circle.attr('fill', this.color);
+        }
+
+        if ('size' in layer.mappings) {
+            circle.attr('r', function (d) { return layer.scaledValue(d, 'size'); });
+        } else {
+            circle.attr('r', this.size);
         }
     };
 
@@ -401,13 +406,14 @@
             linear:      LinearScale,
             log:         LogScale,
             categorical: CategoricalScale,
-            color:       ColorScale
+            color:       ColorScale,
         }[spec.type || 'linear'];
 
         spec.aesthetic !== _undefined && (s.aesthetic = spec.aesthetic);
         spec.values !== _undefined && s.values(spec.values);
         spec.min !== _undefined && (s.min = spec.min);
         spec.max !== _undefined && (s.max = spec.max);
+        spec.range !== _undefined && s.range(spec.range)
         return s;
     };
 
@@ -416,6 +422,7 @@
             x:     LinearScale,
             y:     LinearScale,
             color: ColorScale,
+            size:  LinearScale,
         }[aesthetic]();
         s.aesthetic = aesthetic;
         return s;

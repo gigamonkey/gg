@@ -82,6 +82,14 @@
             }],
         });
 
+        var quadrants = gg({
+            layers: [ {
+                geometry: 'point',
+                mapping: { x: 'x', y: 'y', size: 'size' }
+            }],
+            scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
+        });
+
         // ... and render 'em
 
         var data = gg.sampleData;
@@ -89,11 +97,11 @@
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); }
 
-        scatterplot.render(w, h, ex(), data.upward);
         linechart.render(w, h, ex(), data.upward);
-        barchart.render(w, h, ex(), data.upward);
-        histogram.render(w, h, ex(), data.purchases);
         combined.render(w, h, ex(), data.upward);
+        barchart.render(w, h, ex(), data.upward);
+        quadrants.render(w, h, ex(), data.quadrants);
+        histogram.render(w, h, ex(), data.purchases);
         semilog.render(w, h, ex(), data.semiLogData);
         heightHistogram.render(w, h, ex(), data.heightWeight);
         twoPopulations.render(w, h, ex(), data.twoPopulations);

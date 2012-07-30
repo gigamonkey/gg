@@ -125,5 +125,20 @@
         });
     }());
 
+    gg.sampleData.quadrants = (function () {
+
+        var randomX = d3.random.normal(500, 100);
+        var randomY = d3.random.normal(200, 50);
+        var randomSize = d3.random.normal(10, 2);
+
+        return _.map(_.range(50), function () {
+            return {
+                x: randomX(),
+                y: randomY(),
+                size: Math.max(0, randomSize()) * 100
+            };
+        });
+    }());
+
 
 })(window);
