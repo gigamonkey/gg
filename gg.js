@@ -200,6 +200,11 @@
 
     function Geometry () {}
 
+    function attributeValue (layer, aesthetic, defaultValue) {
+        return (aesthetic in layer.mappings) ?
+            function (d) { return layer.scaledValue(d, aesthetic); } : defaultValue;
+    }
+
     function PointGeometry (spec) {
         this.size  = spec.size || 5;
         this.alpha = spec.alpha || 1;
@@ -210,25 +215,15 @@
 
     PointGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
-        var circle = svg.append('g').selectAll('circle')
+        svg.append('g').selectAll('circle')
             .data(data)
             .enter()
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
-            .attr('fill-opacity', this.alpha);
-
-        if ('color' in layer.mappings) {
-            circle.attr('fill', function (d) { return layer.scaledValue(d, 'color'); });
-        } else {
-            circle.attr('fill', this.color);
-        }
-
-        if ('size' in layer.mappings) {
-            circle.attr('r', function (d) { return layer.scaledValue(d, 'size'); });
-        } else {
-            circle.attr('r', this.size);
-        }
+            .attr('fill-opacity', this.alpha)
+            .attr('fill', attributeValue(layer, 'color', this.color))
+            .attr('r', attributeValue(layer, 'size', this.size));
     };
 
     function LineGeometry (spec) {
@@ -243,17 +238,11 @@
         function x (d) { return layer.scaledValue(d, 'x'); }
         function y (d) { return layer.scaledValue(d, 'y'); }
 
-        var polyline = svg.append('polyline')
+        svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
             .attr('fill', 'none')
-            .attr('stroke-width', this.width);
-
-        if ('color' in layer.mappings) {
-            polyline.attr('stroke', function (d) { return layer.scaledValue(d, 'color'); });
-        } else {
-            polyline.attr('stroke', this.color);
-        }
-
+            .attr('stroke-width', this.width)
+            .attr('stroke', attributeValue(layer, 'color', this.color));
     };
 
     function IntervalGeometry (spec) {
@@ -269,20 +258,15 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        var rect = svg.append('g').selectAll('rect')
+        svg.append('g').selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
             .attr('x', function (d) { return scale(d, 'x') - width/2; })
             .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)
-            .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); });
-
-        if ('color' in layer.mappings) {
-            rect.style('fill', function(d) { return scale(d, 'color'); });
-        } else {
-            rect.style('fill', this.color);
-        }
+            .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); })
+            .attr('fill', attributeValue(layer, 'color', this.color));
     };
 
 
