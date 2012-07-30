@@ -1,9 +1,5 @@
 ;(function (exports) {
 
-    // TODO:
-    // 1. Use d3 svg API where possible.
-    // 2. Make sure axes and actual plotting is lined up properly.
-
     var _undefined;
 
     var json = JSON.stringify;
