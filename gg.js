@@ -22,6 +22,19 @@
         }
     };
 
+    Graphic.prototype.ensureScales = function () {
+        var aesthetics = _.union(_.flatten(_.invoke(this.layers, 'aesthetics')));
+        _.each(aesthetics, function (aesthetic) {
+            if (! this.scales[aesthetic]) {
+                this.scales[aesthetic] = Scale.default(aesthetic);
+            }
+        }, this);
+    };
+
+    Graphic.prototype.prepareLayers = function (data) {
+        _.each(this.layers, function (e) { e.prepare(data); });
+    }
+
     Graphic.prototype.dataMin = function (data, aesthetic) {
         function key (layer) { return layer.dataMin(data, aesthetic); }
         return key(_.min(this.layers, key));
@@ -49,7 +62,8 @@
             .attr('width', this.width)
             .attr('height', this.height);
 
-        _.each(this.layers, function (e) { e.prepare(data); });
+        this.ensureScales();
+        this.prepareLayers(data);
 
         var xAxis = d3.svg.axis()
             .scale(this.scales['x'].d3Scale)
@@ -131,19 +145,14 @@
         return _.keys(this.mappings);
     }
 
-    Layer.prototype.ensureScales = function () {
-        // Need a scale for each aesthetic we care about.
-        _.each(this.aesthetics(), function (aesthetic) {
-            if (! this.graphic.scales[aesthetic]) {
-                this.graphic.scales[aesthetic] = Scale.default(aesthetic);
-            }
-        }, this);
-    };
-
     Layer.prototype.trainScales = function (newData) {
-        this.ensureScales();
         _.each(this.aesthetics(), function (aesthetic) {
             var s = this.graphic.scales[aesthetic];
+            // This is not really right--if we have multiple layers
+            // rendering via the same scale, they might have different
+            // domains. So really we should adjust the domain of the
+            // scale to encompass all the data of all the layers that
+            // use it.
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }
