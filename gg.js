@@ -95,7 +95,7 @@
     };
 
     Graphic.prototype.scale = function (s) {
-        this.scales[s._aesthetic] = s;
+        this.scales[s.aesthetic] = s;
         return this;
     };
 
@@ -138,7 +138,7 @@
 
     Layer.prototype.scaledMin = function (aesthetic) {
         var s = this.graphic.scales[aesthetic];
-        return s.scale(s._min);
+        return s.scale(s.min);
     };
 
     Layer.prototype.aesthetics = function () {
@@ -400,70 +400,50 @@
 
     Scale.fromSpec = function (spec) {
         var s = new {
-            linear: LinearScale,
-            log: LogScale,
+            linear:      LinearScale,
+            log:         LogScale,
             categorical: CategoricalScale,
-            color: ColorScale
+            color:       ColorScale
         }[spec.type || 'linear'];
 
-        spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
+        spec.aesthetic !== _undefined && (s.aesthetic = spec.aesthetic);
         spec.values !== _undefined && s.values(spec.values);
-        spec.min !== _undefined && s.min(spec.min);
-        spec.max !== _undefined && s.max(spec.max);
+        spec.min !== _undefined && (s.min = spec.min);
+        spec.max !== _undefined && (s.max = spec.max);
         return s;
     };
 
     Scale.default = function (aesthetic) {
-        var clazz = {
-            x: LinearScale,
-            y: LinearScale,
+        var s = new {
+            x:     LinearScale,
+            y:     LinearScale,
             color: ColorScale,
-        }[aesthetic];
-
-        if (! clazz) {
-            throw 'No default scale for aesthetic ' + aesthetic;
-        }
-        return new clazz().aesthetic(aesthetic);
+        }[aesthetic]();
+        s.aesthetic = aesthetic;
+        return s;
     };
 
-    Scale.prototype.aesthetic = function (a) {
-        this._aesthetic = a;
-        return this;
-    }
-
     Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
-        if (this._min === _undefined) {
-            this._min = layer.graphic.dataMin(data, aesthetic);
+        if (this.min === _undefined) {
+            this.min = layer.graphic.dataMin(data, aesthetic);
         }
-        if (this._max === _undefined) {
-            this._max = layer.graphic.dataMax(data, aesthetic);
+        if (this.max === _undefined) {
+            this.max = layer.graphic.dataMax(data, aesthetic);
         }
         this.domainSet = true;
-        this.domain([this._min, this._max]);
+        this.domain([this.min, this.max]);
     };
 
     Scale.prototype.domain = function (interval) {
         this.d3Scale = this.d3Scale.domain(interval);
-        return this;
     }
 
     Scale.prototype.range = function (interval) {
         this.d3Scale = this.d3Scale.range(interval);
-        return this;
     }
 
     Scale.prototype.scale = function (v) {
         return this.d3Scale(v);
-    }
-
-    Scale.prototype.min = function (m) {
-        this._min = m;
-        return this;
-    }
-
-    Scale.prototype.max = function (m) {
-        this._max = m;
-        return this;
     }
 
     function LinearScale () { this.d3Scale = d3.scale.linear(); }
