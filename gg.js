@@ -602,7 +602,8 @@
         identity: IdentityStatistic,
         bin:      BinStatistic,
         box:      BoxPlotStatistic,
-        sum:      SumStatistic
+        sum:      SumStatistic,
+        nsum:     NewSumStatistic
     };
 
     Statistics.fromSpec = function (spec) { return new this[spec.kind](spec); };
@@ -641,6 +642,9 @@
             };
         });
     };
+
+    function NewSumStatistic (spec) {}
+
 
     function BoxPlotStatistic (spec) {
         this.group = spec.group || false;
