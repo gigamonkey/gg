@@ -517,6 +517,7 @@
             bin: BinStatistic,
             box: BoxPlotStatistic,
             sum: SumStatistic,
+            nsum: NewSumStatistic,
         }[spec.kind](spec);
     };
 
@@ -560,6 +561,9 @@
             }
         });
     };
+
+    function NewSumStatistic (spec) {}
+
 
     function BoxPlotStatistic (spec) {
         this.group = spec.group || false;
