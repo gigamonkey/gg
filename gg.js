@@ -147,7 +147,7 @@
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }
-            if (aesthetic == 'x' || aesthetic == 'y') {
+            if (aesthetic === 'x' || aesthetic === 'y') {
                 s.range(this.graphic.rangeFor(aesthetic));
             }
         }, this);
