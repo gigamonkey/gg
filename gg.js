@@ -124,7 +124,7 @@
         var layer = new Layer(geometry, graphic);
         geometry.layer = layer;
         spec.mapping !== _undefined && (layer.mappings = spec.mapping);
-        layer.statistic = Statistic.fromSpec(spec.statistic || { kind: 'identity' });
+        layer.statistic = Statistics.fromSpec(spec.statistic || { kind: 'identity' });
         return layer;
     };
 
@@ -511,20 +511,17 @@
     ////////////////////////////////////////////////////////////////////////
     // Statistics
 
-    function Statistic () {}
-
-    Statistic.fromSpec = function (spec) {
-        return new {
+    var Statistics = {
+        kinds: {
             identity: IdentityStatistic,
-            bin: BinStatistic,
-            box: BoxPlotStatistic,
-            sum: SumStatistic,
-        }[spec.kind](spec);
+            bin:      BinStatistic,
+            box:      BoxPlotStatistic,
+            sum:      SumStatistic,
+        },
+        fromSpec: function (spec) { return new this.kinds[spec.kind](spec); }
     };
 
     function IdentityStatistic () {}
-
-    IdentityStatistic.prototype = new Statistic();
 
     IdentityStatistic.prototype.compute = function (data) { return data; }
 
@@ -532,8 +529,6 @@
         this.variable = spec.variable;
         this.bins     = spec.bins || 20;
     }
-
-    BinStatistic.prototype = new Statistic();
 
     BinStatistic.prototype.compute = function (data) {
         var values = _.pluck(data, this.variable);
@@ -547,8 +542,6 @@
         this.group    = spec.group || false;
         this.variable = spec.variable;
     }
-
-    SumStatistic.prototype = new Statistic();
 
     SumStatistic.prototype.compute = function (data) {
         var groups = splitByGroups(data, this.group, this.variable);
@@ -567,8 +560,6 @@
         this.group = spec.group || false;
         this.variable = spec.variable || 'value';
     }
-
-    BoxPlotStatistic.prototype = new Statistic();
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
         return [
