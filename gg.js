@@ -589,34 +589,18 @@
         return _.map(groups, function (values, name) {
             values.sort(d3.ascending);
 
-            var q1       = d3.quantile(values, .25);
-            var median   = d3.quantile(values, .5);
-            var q3       = d3.quantile(values, .75);
-            var lower    = q1;
-            var upper    = q3;
-            var min      = values[0];
-            var max      = values[values.length - 1];
-            var outliers = [];
+            var q1              = d3.quantile(values, .25);
+            var median          = d3.quantile(values, .5);
+            var q3              = d3.quantile(values, .75);
+            var min             = values[0];
+            var max             = values[values.length - 1];
 
-            var fenceRange = 1.5 * (q3 - q1);
-            var lowerFence = q1 - fenceRange;
-            var upperFence = q3 + fenceRange;
-
-            // This could be smarter if we only look at values outside
-            // q1 and q3. Unfortunately, using d3.quantiles means we
-            // don't know what the indices of q1 and q3 are.
-            _.each(values, function (v) {
-                if (v < lowerFence || v > upperFence) {
-                    // outside the fences
-                    outliers.push(v);
-                } else if (v < lower) {
-                    // inside fences and less than than current lower
-                    lower = v;
-                } else if (v > upper) {
-                    // inside fences and more than than current upper
-                    upper = v;
-                }
-            });
+            var fenceRange      = 1.5 * (q3 - q1);
+            var lowerFenceIndex = d3.bisectLeft(values, q1 - fenceRange);
+            var upperFenceIndex = d3.bisectRight(values, q3 + fenceRange, lowerFenceIndex) - 1;
+            var lower           = values[lowerFenceIndex];
+            var upper           = values[upperFenceIndex];
+            var outliers        = values.slice(0, lowerFenceIndex).concat(values.slice(upperFenceIndex + 1));
 
             var r = {
                 group:    name,
