@@ -62,10 +62,6 @@
             ]
         });
 
-        var heightWeightScatter = gg({
-            layers: [{ geometry: 'point', mapping: { x: 'height', y: 'weight' }, size: 1 }]
-        });
-
         var boxplot = gg({
             layers: [ {
                 geometry: 'box',
@@ -101,7 +97,6 @@
         semilog.render(w, h, ex(), data.semiLogData);
         heightHistogram.render(w, h, ex(), data.heightWeight);
         twoPopulations.render(w, h, ex(), data.twoPopulations);
-        // heightWeightScatter.render(w, h, ex(), data.heightWeight);
         boxplot.render(w, h, ex(), data.forBoxPlots);
 
     });
