@@ -97,4 +97,6 @@ var codestats = [
   { utc: 1343624502, lines: 899, author: "peter@gigamonkeys.com" },
   { utc: 1343626839, lines: 883, author: "peter@gigamonkeys.com" },
   { utc: 1343627042, lines: 878, author: "peter@gigamonkeys.com" },
+  { utc: 1343627655, lines: 878, author: "peter@gigamonkeys.com" },
+  { utc: 1343679069, lines: 858, author: "peter@gigamonkeys.com" },
 ];
