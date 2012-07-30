@@ -89,4 +89,12 @@ var codestats = [
   { utc: 1343601213, lines: 835, author: "peter@etsy.com" },
   { utc: 1343601230, lines: 835, author: "peter@etsy.com" },
   { utc: 1343602085, lines: 906, author: "peter@etsy.com" },
+  { utc: 1343602298, lines: 906, author: "peter@etsy.com" },
+  { utc: 1343621530, lines: 902, author: "peter@gigamonkeys.com" },
+  { utc: 1343622277, lines: 899, author: "peter@gigamonkeys.com" },
+  { utc: 1343622372, lines: 899, author: "peter@gigamonkeys.com" },
+  { utc: 1343623453, lines: 908, author: "peter@gigamonkeys.com" },
+  { utc: 1343624502, lines: 899, author: "peter@gigamonkeys.com" },
+  { utc: 1343626839, lines: 883, author: "peter@gigamonkeys.com" },
+  { utc: 1343627042, lines: 878, author: "peter@gigamonkeys.com" },
 ];
