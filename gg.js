@@ -92,7 +92,6 @@
         this.geometry = geometry;
         this.graphic  = graphic;
         this.mappings = {};
-        this.scales   = {};
         this.statistic = null;
         /* Not used yet
            this.positioner = null;
@@ -115,18 +114,16 @@
         return layer;
     };
 
-
-
-    Layer.prototype.scaleFor = function (aesthetic) {
-        return this.scales[aesthetic] || this.graphic.scales[aesthetic]
-    };
+    Layer.prototype.scaleExtracted = function (v, aesthetic) {
+        return this.graphic.scales[aesthetic].scale(v);
+    }
 
     Layer.prototype.scaledValue = function (d, aesthetic) {
-        return this.scaleFor(aesthetic).scale(this.dataValue(d, aesthetic));
+        return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic);
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
-        var s = this.scaleFor(aesthetic);
+        var s = this.graphic.scales[aesthetic];
         return s.scale(s._min);
     };
 
@@ -137,7 +134,7 @@
     Layer.prototype.ensureScales = function () {
         // Need a scale for each aesthetic we care about.
         _.each(this.aesthetics(), function (aesthetic) {
-            if (! this.scaleFor(aesthetic)) {
+            if (! this.graphic.scales[aesthetic]) {
                 this.graphic.scales[aesthetic] = Scale.default(aesthetic);
             }
         }, this);
@@ -146,7 +143,7 @@
     Layer.prototype.trainScales = function (newData) {
         this.ensureScales();
         _.each(this.aesthetics(), function (aesthetic) {
-            var s = this.scaleFor(aesthetic);
+            var s = this.graphic.scales[aesthetic];
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }
@@ -290,7 +287,7 @@
         var width = this.width;
 
         function scale (v, aesthetic) {
-            return layer.scaleFor(aesthetic).scale(v);
+            return layer.scaleExtracted(v, aesthetic);
         }
 
         var color = ('color' in layer.mappings) ?
