@@ -1,6 +1,4 @@
-;(function (exports) {
-
-    var _undefined;
+;(function (exports, undefined) {
 
     var json = JSON.stringify;
 
@@ -67,12 +65,12 @@
 
         var xAxis = d3.svg.axis()
             .scale(this.scales['x'].d3Scale)
-            .tickSize(-(this.height - (2*padding)))
+            .tickSize(2*padding - this.height)
             .orient('bottom');
 
         var yAxis = d3.svg.axis()
             .scale(this.scales['y'].d3Scale)
-            .tickSize(-(this.width - (2*padding)))
+            .tickSize(2*padding - this.width)
             .orient('left');
 
         this.svg.append('g')
@@ -121,7 +119,7 @@
 
         var layer = new Layer(geometry, graphic);
         geometry.layer = layer;
-        spec.mapping !== _undefined && (layer.mappings = spec.mapping);
+        spec.mapping !== undefined && (layer.mappings = spec.mapping);
         layer.statistic = Statistics.fromSpec(spec.statistic || { kind: 'identity' });
         return layer;
     };
@@ -393,11 +391,11 @@
             color:       ColorScale,
         }[spec.type || 'linear'];
 
-        spec.aesthetic !== _undefined && (s.aesthetic = spec.aesthetic);
-        spec.values !== _undefined && s.values(spec.values);
-        spec.min !== _undefined && (s.min = spec.min);
-        spec.max !== _undefined && (s.max = spec.max);
-        spec.range !== _undefined && s.range(spec.range)
+        spec.aesthetic !== undefined && (s.aesthetic = spec.aesthetic);
+        spec.values !== undefined && s.values(spec.values);
+        spec.min !== undefined && (s.min = spec.min);
+        spec.max !== undefined && (s.max = spec.max);
+        spec.range !== undefined && s.range(spec.range)
         return s;
     };
 
@@ -413,10 +411,10 @@
     };
 
     Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
-        if (this.min === _undefined) {
+        if (this.min === undefined) {
             this.min = layer.graphic.dataMin(data, aesthetic);
         }
-        if (this.max === _undefined) {
+        if (this.max === undefined) {
             this.max = layer.graphic.dataMax(data, aesthetic);
         }
         this.domainSet = true;
