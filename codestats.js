@@ -103,4 +103,9 @@ var codestats = [
   { utc: 1343679663, lines: 853, author: "peter@gigamonkeys.com" },
   { utc: 1343681275, lines: 883, author: "peter@gigamonkeys.com" },
   { utc: 1343683368, lines: 867, author: "peter@gigamonkeys.com" },
+  { utc: 1343683553, lines: 867, author: "peter@gigamonkeys.com" },
+  { utc: 1343874178, lines: 865, author: "asolove@gmail.com" },
+  { utc: 1343875596, lines: 866, author: "asolove@gmail.com" },
+  { utc: 1343876721, lines: 866, author: "peter@gigamonkeys.com" },
+  { utc: 1343877148, lines: 866, author: "peter@gigamonkeys.com" },
 ];
