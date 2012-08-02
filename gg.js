@@ -1,30 +1,38 @@
-;(function (exports) {
-
-    // TODO:
-    // 1. Use d3 svg API where possible.
-    // 2. Make sure axes and actual plotting is lined up properly.
-
-    var _undefined;
+;(function (exports, undefined) {
 
     var json = JSON.stringify;
 
-    // This should obviously not be hard-wired here.
-    var padding = 25;
-
-    function Graphic () {
+    function Graphic (opts) {
         this.layers = [];
         this.scales = {};
+        
+        opts = opts || {};
+        this.paddingX = opts.paddingX || opts.padding || 25;
+        this.paddingY = opts.paddingY || opts.padding || 25;
     }
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
-            return [padding, this.width - padding];
+            return [this.paddingX, this.width - this.paddingX];
         } else if (aesthetic === 'y') {
-            return [this.height - padding, padding];
+            return [this.height - this.paddingY, this.paddingY];
         } else {
             throw 'Only 2d graphics supported. Unknown aesthetic: ' + aesthetic;
         }
     };
+
+    Graphic.prototype.ensureScales = function () {
+        var aesthetics = _.union(_.flatten(_.invoke(this.layers, 'aesthetics')));
+        _.each(aesthetics, function (aesthetic) {
+            if (! this.scales[aesthetic]) {
+                this.scales[aesthetic] = Scale.default(aesthetic);
+            }
+        }, this);
+    };
+
+    Graphic.prototype.prepareLayers = function (data) {
+        _.each(this.layers, function (e) { e.prepare(data); });
+    }
 
     Graphic.prototype.dataMin = function (data, aesthetic) {
         function key (layer) { return layer.dataMin(data, aesthetic); }
@@ -53,26 +61,27 @@
             .attr('width', this.width)
             .attr('height', this.height);
 
-        _.each(this.layers, function (e) { e.prepare(data); });
+        this.ensureScales();
+        this.prepareLayers(data);
 
         var xAxis = d3.svg.axis()
             .scale(this.scales['x'].d3Scale)
-            .tickSize(-(this.height - (2*padding)))
+            .tickSize(2*this.paddingY - this.height)
             .orient('bottom');
 
         var yAxis = d3.svg.axis()
             .scale(this.scales['y'].d3Scale)
-            .tickSize(-(this.width - (2*padding)))
+            .tickSize(2*this.paddingX - this.width)
             .orient('left');
 
         this.svg.append('g')
             .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (this.height - padding) + ')')
+            .attr('transform', 'translate(0,' + (this.height - this.paddingY) + ')')
             .call(xAxis);
 
         this.svg.append('g')
             .attr('class', 'y axis')
-            .attr('transform', 'translate(' + padding + ',0)')
+            .attr('transform', 'translate(' + this.paddingX + ',0)')
             .call(yAxis);
 
         _.each(this.layers, function (e) { e.render(this); }, this);
@@ -81,12 +90,10 @@
 
     Graphic.prototype.layer = function (e) {
         this.layers.push(e);
-        return this;
     };
 
     Graphic.prototype.scale = function (s) {
-        this.scales[s._aesthetic] = s;
-        return this;
+        this.scales[s.aesthetic] = s;
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -96,7 +103,6 @@
         this.geometry = geometry;
         this.graphic  = graphic;
         this.mappings = {};
-        this.scales   = {};
         this.statistic = null;
         /* Not used yet
            this.positioner = null;
@@ -114,47 +120,40 @@
 
         var layer = new Layer(geometry, graphic);
         geometry.layer = layer;
-        spec.mapping !== _undefined && (layer.mappings = spec.mapping);
-        layer.statistic = Statistic.fromSpec(spec.statistic || { kind: 'identity' });
+        spec.mapping !== undefined && (layer.mappings = spec.mapping);
+        layer.statistic = Statistics.fromSpec(spec.statistic || { kind: 'identity' });
         return layer;
     };
 
-
-
-    Layer.prototype.scaleFor = function (aesthetic) {
-        return this.scales[aesthetic] || this.graphic.scales[aesthetic]
-    };
+    Layer.prototype.scaleExtracted = function (v, aesthetic) {
+        return this.graphic.scales[aesthetic].scale(v);
+    }
 
     Layer.prototype.scaledValue = function (d, aesthetic) {
-        return this.scaleFor(aesthetic).scale(this.dataValue(d, aesthetic));
+        return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic);
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
-        var s = this.scaleFor(aesthetic);
-        return s.scale(s._min);
+        var s = this.graphic.scales[aesthetic];
+        return s.scale(s.min);
     };
 
     Layer.prototype.aesthetics = function () {
         return _.keys(this.mappings);
     }
 
-    Layer.prototype.ensureScales = function () {
-        // Need a scale for each aesthetic we care about.
-        _.each(this.aesthetics(), function (aesthetic) {
-            if (! this.scaleFor(aesthetic)) {
-                this.graphic.scales[aesthetic] = Scale.default(aesthetic);
-            }
-        }, this);
-    };
-
     Layer.prototype.trainScales = function (newData) {
-        this.ensureScales();
         _.each(this.aesthetics(), function (aesthetic) {
-            var s = this.scaleFor(aesthetic);
+            var s = this.graphic.scales[aesthetic];
+            // This is not really right--if we have multiple layers
+            // rendering via the same scale, they might have different
+            // domains. So really we should adjust the domain of the
+            // scale to encompass all the data of all the layers that
+            // use it.
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }
-            if (aesthetic == 'x' || aesthetic == 'y') {
+            if (aesthetic === 'x' || aesthetic === 'y') {
                 s.range(this.graphic.rangeFor(aesthetic));
             }
         }, this);
@@ -200,8 +199,13 @@
 
     function Geometry () {}
 
+    function attributeValue (layer, aesthetic, defaultValue) {
+        return (aesthetic in layer.mappings) ?
+            function (d) { return layer.scaledValue(d, aesthetic); } : defaultValue;
+    }
+
     function PointGeometry (spec) {
-        this.size = spec.size || 5;
+        this.size  = spec.size || 5;
         this.alpha = spec.alpha || 1;
         this.color = spec.color || 'black';
     }
@@ -210,20 +214,15 @@
 
     PointGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
-        var circle = svg.append('g').selectAll('circle')
+        svg.append('g').selectAll('circle')
             .data(data)
             .enter()
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
-            .attr('r', this.size)
-            .attr('fill-opacity', this.alpha);
-
-        if ('color' in layer.mappings) {
-            circle.attr('fill', function (d) { return layer.scaledValue(d, 'color'); });
-        } else {
-            circle.attr('fill', this.color);
-        }
+            .attr('fill-opacity', this.alpha)
+            .attr('fill', attributeValue(layer, 'color', this.color))
+            .attr('r', attributeValue(layer, 'size', this.size));
     };
 
     function LineGeometry (spec) {
@@ -238,17 +237,11 @@
         function x (d) { return layer.scaledValue(d, 'x'); }
         function y (d) { return layer.scaledValue(d, 'y'); }
 
-        var polyline = svg.append('polyline')
+        svg.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
             .attr('fill', 'none')
-            .attr('stroke-width', this.width);
-
-        if ('color' in layer.mappings) {
-            polyline.attr('stroke', function (d) { return layer.scaledValue(d, 'color'); });
-        } else {
-            polyline.attr('stroke', this.color);
-        }
-
+            .attr('stroke-width', this.width)
+            .attr('stroke', attributeValue(layer, 'color', this.color));
     };
 
     function IntervalGeometry (spec) {
@@ -264,20 +257,15 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        var rect = svg.append('g').selectAll('rect')
+        svg.append('g').selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
             .attr('x', function (d) { return scale(d, 'x') - width/2; })
             .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)
-            .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); });
-
-        if ('color' in layer.mappings) {
-            rect.style('fill', function(d) { return scale(d, 'color'); });
-        } else {
-            rect.style('fill', this.color);
-        }
+            .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); })
+            .attr('fill', attributeValue(layer, 'color', this.color));
     };
 
 
@@ -294,7 +282,7 @@
         var width = this.width;
 
         function scale (v, aesthetic) {
-            return layer.scaleFor(aesthetic).scale(v);
+            return layer.scaleExtracted(v, aesthetic);
         }
 
         var color = ('color' in layer.mappings) ?
@@ -398,70 +386,52 @@
 
     Scale.fromSpec = function (spec) {
         var s = new {
-            linear: LinearScale,
-            log: LogScale,
+            linear:      LinearScale,
+            log:         LogScale,
             categorical: CategoricalScale,
-            color: ColorScale
+            color:       ColorScale,
         }[spec.type || 'linear'];
 
-        spec.aesthetic !== _undefined && s.aesthetic(spec.aesthetic);
-        spec.values !== _undefined && s.values(spec.values);
-        spec.min !== _undefined && s.min(spec.min);
-        spec.max !== _undefined && s.max(spec.max);
+        spec.aesthetic !== undefined && (s.aesthetic = spec.aesthetic);
+        spec.values !== undefined && s.values(spec.values);
+        spec.min !== undefined && (s.min = spec.min);
+        spec.max !== undefined && (s.max = spec.max);
+        spec.range !== undefined && s.range(spec.range)
         return s;
     };
 
     Scale.default = function (aesthetic) {
-        var clazz = {
-            x: LinearScale,
-            y: LinearScale,
+        var s = new {
+            x:     LinearScale,
+            y:     LinearScale,
             color: ColorScale,
-        }[aesthetic];
-
-        if (! clazz) {
-            throw 'No default scale for aesthetic ' + aesthetic;
-        }
-        return new clazz().aesthetic(aesthetic);
+            size:  LinearScale,
+        }[aesthetic]();
+        s.aesthetic = aesthetic;
+        return s;
     };
 
-    Scale.prototype.aesthetic = function (a) {
-        this._aesthetic = a;
-        return this;
-    }
-
     Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
-        if (this._min === _undefined) {
-            this._min = layer.graphic.dataMin(data, aesthetic);
+        if (this.min === undefined) {
+            this.min = layer.graphic.dataMin(data, aesthetic);
         }
-        if (this._max === _undefined) {
-            this._max = layer.graphic.dataMax(data, aesthetic);
+        if (this.max === undefined) {
+            this.max = layer.graphic.dataMax(data, aesthetic);
         }
         this.domainSet = true;
-        this.domain([this._min, this._max]);
+        this.domain([this.min, this.max]);
     };
 
     Scale.prototype.domain = function (interval) {
         this.d3Scale = this.d3Scale.domain(interval);
-        return this;
     }
 
     Scale.prototype.range = function (interval) {
         this.d3Scale = this.d3Scale.range(interval);
-        return this;
     }
 
     Scale.prototype.scale = function (v) {
         return this.d3Scale(v);
-    }
-
-    Scale.prototype.min = function (m) {
-        this._min = m;
-        return this;
-    }
-
-    Scale.prototype.max = function (m) {
-        this._max = m;
-        return this;
     }
 
     function LinearScale () { this.d3Scale = d3.scale.linear(); }
@@ -477,7 +447,6 @@
         // Setting padding to 1 seems to be required to get bars to
         // line up with axis ticks. Needs more investigation.
         this.padding = 1;
-        return this;
     }
 
     CategoricalScale.prototype = new Scale();
@@ -485,7 +454,6 @@
     CategoricalScale.prototype.values = function (values) {
         this.domainSet = true;
         this.d3Scale.domain(values);
-        return this;
     }
 
     CategoricalScale.prototype.defaultDomain = function (layer, data, aesthetic) {
@@ -497,7 +465,6 @@
 
     CategoricalScale.prototype.range = function (interval) {
         this.d3Scale = this.d3Scale.rangeBands(interval, this.padding);
-        return this;
     }
 
     function ColorScale() {
@@ -509,21 +476,18 @@
     ////////////////////////////////////////////////////////////////////////
     // Statistics
 
-    function Statistic () {}
-
-    Statistic.fromSpec = function (spec) {
-        return new {
+    var Statistics = {
+        kinds: {
             identity: IdentityStatistic,
-            bin: BinStatistic,
-            box: BoxPlotStatistic,
-            sum: SumStatistic,
-            nsum: NewSumStatistic,
-        }[spec.kind](spec);
+            bin:      BinStatistic,
+            box:      BoxPlotStatistic,
+            sum:      SumStatistic,
+            nsum:     NewSumStatistic
+        },
+        fromSpec: function (spec) { return new this.kinds[spec.kind](spec); }
     };
 
     function IdentityStatistic () {}
-
-    IdentityStatistic.prototype = new Statistic();
 
     IdentityStatistic.prototype.compute = function (data) { return data; }
 
@@ -531,8 +495,6 @@
         this.variable = spec.variable;
         this.bins     = spec.bins || 20;
     }
-
-    BinStatistic.prototype = new Statistic();
 
     BinStatistic.prototype.compute = function (data) {
         var values = _.pluck(data, this.variable);
@@ -546,8 +508,6 @@
         this.group    = spec.group || false;
         this.variable = spec.variable;
     }
-
-    SumStatistic.prototype = new Statistic();
 
     SumStatistic.prototype.compute = function (data) {
         var groups = splitByGroups(data, this.group, this.variable);
@@ -569,8 +529,6 @@
         this.group = spec.group || false;
         this.variable = spec.variable || 'value';
     }
-
-    BoxPlotStatistic.prototype = new Statistic();
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
         return [
@@ -600,34 +558,18 @@
         return _.map(groups, function (values, name) {
             values.sort(d3.ascending);
 
-            var q1       = d3.quantile(values, .25);
-            var median   = d3.quantile(values, .5);
-            var q3       = d3.quantile(values, .75);
-            var lower    = q1;
-            var upper    = q3;
-            var min      = values[0];
-            var max      = values[values.length - 1];
-            var outliers = [];
+            var q1              = d3.quantile(values, .25);
+            var median          = d3.quantile(values, .5);
+            var q3              = d3.quantile(values, .75);
+            var min             = values[0];
+            var max             = values[values.length - 1];
 
-            var fenceRange = 1.5 * (q3 - q1);
-            var lowerFence = q1 - fenceRange;
-            var upperFence = q3 + fenceRange;
-
-            // This could be smarter if we only look at values outside
-            // q1 and q3. Unfortunately, using d3.quantiles means we
-            // don't know what the indices of q1 and q3 are.
-            _.each(values, function (v) {
-                if (v < lowerFence || v > upperFence) {
-                    // outside the fences
-                    outliers.push(v);
-                } else if (v < lower) {
-                    // inside fences and less than than current lower
-                    lower = v;
-                } else if (v > upper) {
-                    // inside fences and more than than current upper
-                    upper = v;
-                }
-            });
+            var fenceRange      = 1.5 * (q3 - q1);
+            var lowerFenceIndex = d3.bisectLeft(values, q1 - fenceRange);
+            var upperFenceIndex = d3.bisectRight(values, q3 + fenceRange, lowerFenceIndex) - 1;
+            var lower           = values[lowerFenceIndex];
+            var upper           = values[upperFenceIndex];
+            var outliers        = values.slice(0, lowerFenceIndex).concat(values.slice(upperFenceIndex + 1));
 
             var r = {
                 group:    name,
@@ -663,8 +605,8 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
-    function gg (spec) {
-        var g = new Graphic();
+    function gg (spec, opts) {
+        var g = new Graphic(opts);
         _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
         _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
         return g;
