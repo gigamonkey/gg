@@ -21,8 +21,7 @@ Some ideas of things to do next:
 
 - Regularize/rationalize/document use of CSS for controlling appearence.
 
-
-- In-browser interactive graph builder. (REPL?)
+- In-browser interactive graphic builder. (REPL?)
 
 
 *Want to hack data or something else at Etsy? Email me or see
