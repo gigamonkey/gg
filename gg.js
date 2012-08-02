@@ -2,19 +2,20 @@
 
     var json = JSON.stringify;
 
-    // This should obviously not be hard-wired here.
-    var padding = 25;
-
-    function Graphic () {
+    function Graphic (opts) {
         this.layers = [];
         this.scales = {};
+        
+        opts = opts || {};
+        this.paddingX = opts.paddingX || opts.padding || 25;
+        this.paddingY = opts.paddingY || opts.padding || 25;
     }
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
-            return [padding, this.width - padding];
+            return [this.paddingX, this.width - this.paddingX];
         } else if (aesthetic === 'y') {
-            return [this.height - padding, padding];
+            return [this.height - this.paddingY, this.paddingY];
         } else {
             throw 'Only 2d graphics supported. Unknown aesthetic: ' + aesthetic;
         }
@@ -65,22 +66,22 @@
 
         var xAxis = d3.svg.axis()
             .scale(this.scales['x'].d3Scale)
-            .tickSize(2*padding - this.height)
+            .tickSize(2*this.paddingY - this.height)
             .orient('bottom');
 
         var yAxis = d3.svg.axis()
             .scale(this.scales['y'].d3Scale)
-            .tickSize(2*padding - this.width)
+            .tickSize(2*this.paddingX - this.width)
             .orient('left');
 
         this.svg.append('g')
             .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (this.height - padding) + ')')
+            .attr('transform', 'translate(0,' + (this.height - this.paddingY) + ')')
             .call(xAxis);
 
         this.svg.append('g')
             .attr('class', 'y axis')
-            .attr('transform', 'translate(' + padding + ',0)')
+            .attr('transform', 'translate(' + this.paddingX + ',0)')
             .call(yAxis);
 
         _.each(this.layers, function (e) { e.render(this); }, this);
@@ -600,8 +601,8 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
-    function gg (spec) {
-        var g = new Graphic();
+    function gg (spec, opts) {
+        var g = new Graphic(opts);
         _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
         _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
         return g;
