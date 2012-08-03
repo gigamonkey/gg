@@ -671,7 +671,6 @@
                 summedPoints.push(newPoint);
             });
         });
-        debugger
         return summedPoints;
 
     };
