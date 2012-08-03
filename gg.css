@@ -46,3 +46,8 @@ div#examples span { margin: 3px; }
   font-size: 8px;
   font-weight: 300;
 }
+
+.legend {
+    font-size: 10px;
+    font-weight: 300;
+}
