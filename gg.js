@@ -87,13 +87,15 @@
         this.svg.append('g')
             .attr('class', 'x legend')
             .attr('transform', 'translate(' + (this.width / 2) + ',' + (this.height - 5) + ')')
-            .append('text').text('x legend').attr('text-anchor', 'middle');
+            .append('text')
+            .text(this.layers[0].legend('x'))
+            .attr('text-anchor', 'middle');
 
         this.svg.append('g')
             .attr('class', 'y legend')
             .attr('transform', 'translate(' + 10 + ',' + (this.height /2) + ') rotate(270)')
             .append('text')
-            .text('y legend')
+            .text(this.layers[0].legend('y'))
             .attr('text-anchor', 'middle');
 
         _.each(this.layers, function (e) { e.render(this); }, this);
@@ -203,6 +205,10 @@
             return this.statistic.dataRange(data)[1];
         }
     };
+
+    Layer.prototype.legend = function (aesthetic) {
+        return this.mappings[aesthetic] || this.statistic.variable;
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Geometry objects are the ones that actually draw stuff onto the
