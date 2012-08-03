@@ -9,7 +9,7 @@
         return _.map(_.range(20), function () {
             x += Math.random() * 30;
             y += 20 - Math.random() * 30;
-            return { d: x, r: y, };
+            return { d: x, r: y };
         });
     }());
 
@@ -22,7 +22,7 @@
             return {
                 name: n,
                 rng: d3.random.normal(mean, mean/3)
-            }
+            };
         });
 
         return _.map(_.range(20), function () {
@@ -44,7 +44,7 @@
             y *= Math.random() * 5;
             data.push({
                 d: x,
-                r: y,
+                r: y
             });
         });
         return data;
@@ -63,7 +63,7 @@
             var lbs    = randomBMI() * inches * inches / 703.06958;
             return {
                 height: inches,
-                weight: lbs,
+                weight: lbs
             };
         });
     }());
@@ -73,7 +73,7 @@
         var names         = ['a', 'b', 'c', 'd' ];
         var randomMeans   = d3.random.normal(500, 100);
         var randomStddevs = d3.random.normal(150, 20);
-        var outlierRates  = d3.random.normal(.01, .001);
+        var outlierRates  = d3.random.normal(0.01, 0.001);
 
         function makeRNG (mean, stddev, outlierRate) {
             var baseRNG = d3.random.normal(mean, stddev);
@@ -82,14 +82,14 @@
                 var sign = Math.abs(r - mean) / (r - mean);
                 return (Math.random() < outlierRate)
                     ? r + (sign * stddev * (3 + Math.random() * 2)) : r;
-            }
+            };
         }
 
         var groups = _.map(names, function (n) {
             return {
                 name: n,
                 rng: makeRNG(randomMeans(), Math.abs(randomStddevs()), Math.abs(outlierRates()))
-            }
+            };
         });
 
         return _.map(_.range(2000), function () {
@@ -104,12 +104,12 @@
             {
                 name: 'zorks',
                 rng1: d3.random.normal(100, 15),
-                rng2: d3.random.normal(0, .1),
+                rng2: d3.random.normal(0, 0.1)
             },
             {
                 name: 'florgs',
                 rng1: d3.random.normal(90, 20),
-                rng2: d3.random.normal(0, .2),
+                rng2: d3.random.normal(0, 0.2)
             }
         ];
 
