@@ -88,14 +88,14 @@
             .attr('class', 'x legend')
             .attr('transform', 'translate(' + (this.width / 2) + ',' + (this.height - 5) + ')')
             .append('text')
-            .text(this.layers[0].legend('x'))
+            .text(this.legend('x'))
             .attr('text-anchor', 'middle');
 
         this.svg.append('g')
             .attr('class', 'y legend')
             .attr('transform', 'translate(' + 10 + ',' + (this.height /2) + ') rotate(270)')
             .append('text')
-            .text(this.layers[0].legend('y'))
+            .text(this.legend('y'))
             .attr('text-anchor', 'middle');
 
         _.each(this.layers, function (e) { e.render(this); }, this);
@@ -109,6 +109,10 @@
     Graphic.prototype.scale = function (s) {
         this.scales[s.aesthetic] = s;
     };
+
+    Graphic.prototype.legend = function (aesthetic) {
+        return this.scales[aesthetic].legend || this.layers[0].legend(aesthetic);
+    }
 
     ////////////////////////////////////////////////////////////////////////
     // Layers
@@ -411,10 +415,12 @@
         }[spec.type || 'linear'];
 
         spec.aesthetic !== undefined && (s.aesthetic = spec.aesthetic);
-        spec.values !== undefined && s.values(spec.values);
-        spec.min !== undefined && (s.min = spec.min);
-        spec.max !== undefined && (s.max = spec.max);
-        spec.range !== undefined && s.range(spec.range)
+        spec.values    !== undefined && s.values(spec.values);
+        spec.min       !== undefined && (s.min = spec.min);
+        spec.max       !== undefined && (s.max = spec.max);
+        spec.range     !== undefined && s.range(spec.range)
+        spec.legend    !== undefined && (s.legend = spec.legend);
+
         return s;
     };
 

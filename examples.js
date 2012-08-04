@@ -45,7 +45,8 @@
                 { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
                 { geometry: 'line', mapping: { x: 'd', y: 'r' } },
             ],
-            scales: [ { type: 'log', aesthetic: 'y' } ]
+            scales: [ { type: 'log', aesthetic: 'y', legend: 'whatever' },
+                      { aesthetic: 'x', legend: 'foo' } ]
         });
 
         var heightHistogram = gg({
