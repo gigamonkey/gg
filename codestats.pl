@@ -43,6 +43,6 @@ foreach (sort @data) {
     print "  $_\n";
 }
 print "];\n";
-system("git stash apply &> /dev/null") == 0 or die "stash failed: $?";
+#system("git stash apply &> /dev/null") == 0 or die "stash failed: $?";
 
 __END__
