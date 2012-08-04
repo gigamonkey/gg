@@ -13,6 +13,8 @@ Some ideas of things to do next:
 
 - Facets.
 
+- Keys for aesthetics other than x and y.
+
 - Size scales for more geometries.
 
 - Coordinate systems (esp. pie charts)
