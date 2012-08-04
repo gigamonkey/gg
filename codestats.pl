@@ -24,6 +24,8 @@ foreach (@loglines) {
     chomp;
     my ($sha, $utc, $author) = split ' ', $_, 4;
 
+    $utc *= 1000; # for Javascript
+
     system("git co $sha &> /dev/null") == 0 or die "checkout failed: $?";
 
     opendir(DIR, ".") or die $!;
