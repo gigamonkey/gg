@@ -409,6 +409,7 @@
     Scale.fromSpec = function (spec) {
         var s = new {
             linear:      LinearScale,
+            time:        TimeScale,
             log:         LogScale,
             categorical: CategoricalScale,
             color:       ColorScale,
@@ -461,6 +462,10 @@
     function LinearScale () { this.d3Scale = d3.scale.linear(); }
 
     LinearScale.prototype = new Scale();
+
+    function TimeScale () { this.d3Scale = d3.time.scale(); }
+
+    TimeScale.prototype = new Scale();
 
     function LogScale () { this.d3Scale = d3.scale.log(); }
 
