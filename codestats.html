@@ -18,8 +18,9 @@ $(document).ready(function() {
             { geometry: 'point', mapping: { x: 'utc', y: 'lines', color: 'author' }, size: 3 }
         ],
         scales: [
-            { type: 'color', aesthetic: 'color' },
-            { type: 'time', aesthetic: 'x' }
+            { type: 'time', aesthetic: 'x', legend: 'Day' },
+            { aesthetic: 'y', legend: 'Lines of code' },
+            { type: 'color', aesthetic: 'color' }
         ],
     });
     chart.render(1000, 300, d3.select('#chart'), codestats)
