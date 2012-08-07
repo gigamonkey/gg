@@ -177,8 +177,19 @@
         }, this);
     };
 
+    Layer.prototype.remapData = function (data) {
+        var mappings = this.mappings;
+        return _.map(data, function(point) {
+            var remapped = {};
+            _.each(mappings, function(property, aesthetic) {
+                remapped[aesthetic] = point[property];
+            });
+            return remapped;
+        });
+    };
+
     Layer.prototype.prepare = function (data) {
-        this.newData = this.statistic.compute(data);
+        this.newData = this.statistic.compute(data, this.mappings);
         this.trainScales(this.newData);
     };
 
@@ -290,7 +301,6 @@
             .attr('fill', attributeValue(layer, 'color', this.color));
     };
 
-
     function BoxPlotGeometry (spec) {
         this.width = spec.width || 10;
         this.color = spec.color || 'black';
@@ -375,8 +385,6 @@
             .attr('y2', function (d) { return scale(d.lower, 'y'); })
             .attr('stroke', color)
             .attr('stroke-width', 1);
-
-
 
         // outliers
         var outliers = [];
@@ -511,6 +519,7 @@
             bin:      BinStatistic,
             box:      BoxPlotStatistic,
             sum:      SumStatistic,
+            nsum:     NewSumStatistic
         },
         fromSpec: function (spec) { return new this.kinds[spec.kind](spec); }
     };
@@ -548,6 +557,28 @@
                 max: d3.max(values),
             }
         });
+    };
+
+    function NewSumStatistic (spec) {}
+
+    NewSumStatistic.prototype.compute = function (data, mappings) {
+        // Sum stat expects to have a x and y aesthetics.
+        var totalPoints = data.length;
+        var summedPoints = [];
+        var values = _.groupBy(data, function(point) { return point[mappings.x]; });
+        _.each(values, function(values, xval) {
+            _.each(_.groupBy(values, function(point) { return point[mappings.y]; }), function(values, yval) {
+                var newPoint = {
+                    n: values.length,
+                    prop: (values.length / totalPoints)
+                };
+                newPoint[mappings.x] = xval;
+                newPoint[mappings.y] = yval;
+                summedPoints.push(newPoint);
+            });
+        });
+        return summedPoints;
+
     };
 
     function BoxPlotStatistic (spec) {
