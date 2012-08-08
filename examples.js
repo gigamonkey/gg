@@ -12,7 +12,10 @@
         });
 
         var linechart = gg({
-            layers: [{ geometry: 'line', mapping: { x: 'd', y: 'r' }, color: 'red' }]
+            layers: [
+                { geometry: 'line', mapping: { x: 'd', y: 'r' }, color: 'red' },
+                { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' },  show: "hover" }
+            ]
         });
 
         var barchart = gg({
@@ -84,10 +87,13 @@
         });
 
         var quadrants = gg({
-            layers: [ {
-                geometry: 'point',
-                mapping: { x: 'x', y: 'y', size: 'size' }
-            }],
+            layers: [ 
+                {
+                    geometry: 'point',
+                    mapping: { x: 'x', y: 'y', size: 'size' }
+                },
+                { geometry: 'text', mapping: { x: 'x', y: 'y', text: '{name}: {size}' },  show: "hover" }
+            ],
             scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
         });
 

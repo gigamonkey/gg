@@ -35,13 +35,20 @@
     };
 
     Graphic.prototype.dataMin = function (data, aesthetic) {
+        var layers = this.layersWithAesthetic(aesthetic);
         function key (layer) { return layer.dataMin(data, aesthetic); }
-        return key(_.min(this.layers, key));
+        return key(_.min(layers, key));
     };
 
     Graphic.prototype.dataMax = function (data, aesthetic) {
+        var layers = this.layersWithAesthetic(aesthetic);
         function key (layer) { return layer.dataMax(data, aesthetic); }
-        return key(_.max(this.layers, key));
+        return key(_.max(layers, key));
+    };
+
+    Graphic.prototype.layersWithAesthetic = function(aesthetic){
+        function hasAesthetic (layer) { return (aesthetic in layer.mappings); }
+        return _.filter(this.layers, hasAesthetic);
     };
 
     Graphic.prototype.render = function (width, height, where, data) {
@@ -133,7 +140,8 @@
             point: PointGeometry,
             line: LineGeometry,
             interval: IntervalGeometry,
-            box: BoxPlotGeometry
+            box: BoxPlotGeometry,
+            text: TextGeometry
         }[spec.geometry || 'point'](spec);
 
         var layer = new Layer(geometry, graphic);
@@ -143,12 +151,12 @@
         return layer;
     };
 
-    Layer.prototype.scaleExtracted = function (v, aesthetic) {
-        return this.graphic.scales[aesthetic].scale(v);
+    Layer.prototype.scaleExtracted = function (v, aesthetic, d) {
+        return this.graphic.scales[aesthetic].scale(v, d);
     };
 
     Layer.prototype.scaledValue = function (d, aesthetic) {
-        return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic);
+        return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic, d);
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
@@ -168,6 +176,10 @@
             // domains. So really we should adjust the domain of the
             // scale to encompass all the data of all the layers that
             // use it.
+            if (aesthetic === 'text') {
+                s.prepare(this, newData, aesthetic);
+                return;
+            }
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }
@@ -395,7 +407,28 @@
             .attr('fill', color);
     };
 
+    function TextGeometry (spec) {
+        this.show = spec.show;
+    }
 
+    TextGeometry.prototype = new Geometry();
+
+    TextGeometry.prototype.render = function (svg, data) {
+        var layer = this.layer;
+        var area = svg.append('g');
+        var text = area.selectAll('circle')
+            .data(data)
+            .enter()
+            .append('text')
+            .attr('class', 'graphicText')
+            .attr('x', function (d) { return layer.scaledValue(d, 'x'); })
+            .attr('y', function (d) { return layer.scaledValue(d, 'y'); })
+            .text(function(d) { return layer.scaledValue(d, 'text'); });
+        
+        if ( this.show === 'hover' ){
+            text.attr('class', 'graphicText showOnHover');
+        }
+    };
 
     ////////////////////////////////////////////////////////////////////////
     // Scales -- a scale is used to map from data values to aesthetic
@@ -429,7 +462,8 @@
             x:     LinearScale,
             y:     LinearScale,
             color: ColorScale,
-            size:  LinearScale
+            size:  LinearScale,
+            text:  TextScale
         }[aesthetic]();
         s.aesthetic = aesthetic;
         return s;
@@ -500,6 +534,24 @@
     }
 
     ColorScale.prototype = new CategoricalScale();
+    
+    function TextScale(){ }
+    
+    TextScale.prototype = new Scale();
+    
+    TextScale.prototype.prepare = function (layer, newData, aesthetic) {
+        this.pattern = layer.mappings[aesthetic];
+        this.data = newData;
+    };
+    
+    TextScale.prototype.scale = function (v, data) {
+        function format (match, key) {
+            var it = data[key];
+            if ( typeof it === 'number' ) it = it.toFixed(2);
+            return String(it);
+        }
+        return this.pattern.replace(/{(.*?)}/g, format);
+    };
 
     ////////////////////////////////////////////////////////////////////////
     // Statistics

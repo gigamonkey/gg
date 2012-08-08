@@ -130,12 +130,14 @@
         var randomX = d3.random.normal(500, 100);
         var randomY = d3.random.normal(200, 50);
         var randomSize = d3.random.normal(10, 2);
+        var randomId = d3.random.normal(1000, 100);
 
         return _.map(_.range(50), function () {
             return {
                 x: randomX(),
                 y: randomY(),
-                size: Math.max(0, randomSize()) * 100
+                size: Math.max(0, randomSize()) * 100,
+                name: "Patient #" + Math.round(randomId())
             };
         });
     }());

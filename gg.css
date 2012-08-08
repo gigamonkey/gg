@@ -51,3 +51,20 @@ div#examples span { margin: 3px; }
     font-size: 10px;
     font-weight: 300;
 }
+
+.graphicText {
+  font-size: 10px;
+  cursor: pointer;
+  fill: black;
+  text-shadow: 1px 1px 0px white;
+}
+
+.graphicText.showOnHover {
+  fill: transparent;
+  text-shadow: none;
+}
+
+.graphicText.showOnHover:hover {
+  fill: black;
+  text-shadow: 1px 1px 0px white;
+}
