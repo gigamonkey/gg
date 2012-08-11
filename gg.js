@@ -25,7 +25,7 @@
         var aesthetics = _.union(_.flatten(_.invoke(this.layers, 'aesthetics')));
         _.each(aesthetics, function (aesthetic) {
             if (! this.scales[aesthetic]) {
-                this.scales[aesthetic] = Scale.default.(aesthetic);
+                this.scales[aesthetic] = Scale.default(aesthetic);
             }
         }, this);
     };
