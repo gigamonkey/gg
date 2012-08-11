@@ -25,7 +25,7 @@
         var aesthetics = _.union(_.flatten(_.invoke(this.layers, 'aesthetics')));
         _.each(aesthetics, function (aesthetic) {
             if (! this.scales[aesthetic]) {
-                this.scales[aesthetic] = Scale["default"](aesthetic);
+                this.scales[aesthetic] = Scale.default.(aesthetic);
             }
         }, this);
     };
@@ -424,7 +424,7 @@
             .attr('x', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('y', function (d) { return layer.scaledValue(d, 'y'); })
             .text(function(d) { return layer.scaledValue(d, 'text'); });
-        
+
         if ( this.show === 'hover' ){
             text.attr('class', 'graphicText showOnHover');
         }
@@ -457,7 +457,7 @@
         return s;
     };
 
-    Scale["default"] = function (aesthetic) {
+    Scale.default = function (aesthetic) {
         var s = new {
             x:     LinearScale,
             y:     LinearScale,
@@ -534,16 +534,16 @@
     }
 
     ColorScale.prototype = new CategoricalScale();
-    
+
     function TextScale(){ }
-    
+
     TextScale.prototype = new Scale();
-    
+
     TextScale.prototype.prepare = function (layer, newData, aesthetic) {
         this.pattern = layer.mappings[aesthetic];
         this.data = newData;
     };
-    
+
     TextScale.prototype.scale = function (v, data) {
         function format (match, key) {
             var it = data[key];
