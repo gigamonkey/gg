@@ -32,6 +32,19 @@
             ]
         });
 
+        var nhistogram = gg({
+            layers: [{
+                geometry: 'interval',
+                mapping: { x: 'group', y: 'count', color: 'group' },
+                width: 20,
+                statistic: { kind: 'sum', group: 'who', variable: 'purchases' }
+            }],
+            scales: [
+                { type: 'categorical', aesthetic: 'x' },
+                { type: 'linear', aesthetic: 'y', min: 0 },
+            ]
+        });
+
         var combined = gg({
             layers: [
                 { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
@@ -118,7 +131,7 @@
 
         d3.csv('data/diamonds_sample.csv', function(data) {
             diamondsSum.render(w, h, ex(), data);
-            debugger;
+            
         });
     });
 })();

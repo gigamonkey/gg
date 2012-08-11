@@ -524,9 +524,19 @@
 
     BinStatistic.prototype.compute = function (data) {
         var values = _.pluck(data, this.variable);
-        var bins = d3.layout.histogram().bins(this.bins)(values);
-        return _.map(bins, function (bin, i) {
-            return { bin: i, count: bin.y };
+        var histogram = d3.layout.histogram().bins(this.bins);
+        var frequency = histogram(values);
+        histogram.frequency(false);
+        var density = histogram(values);
+        return _.map(frequency, function (bin, i) {
+            return {
+                bin: i,
+                count: bin.y,
+                density: density[i].y,
+                ncount: bin.y / data.length || 0
+                // Not clear to me how to impelment the ndensity metric
+                //ndensity: null 
+            };
         });
     };
 
@@ -567,7 +577,6 @@
             });
         });
         return summedPoints;
-
     };
 
     function BoxPlotStatistic (spec) {
