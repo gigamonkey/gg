@@ -24,6 +24,8 @@ foreach (@loglines) {
     chomp;
     my ($sha, $utc, $author) = split ' ', $_, 4;
 
+    $utc *= 1000; # for Javascript
+
     system("git co $sha &> /dev/null") == 0 or die "checkout failed: $?";
 
     opendir(DIR, ".") or die $!;
@@ -43,6 +45,6 @@ foreach (sort @data) {
     print "  $_\n";
 }
 print "];\n";
-system("git stash apply &> /dev/null") == 0 or die "stash failed: $?";
+#system("git stash apply &> /dev/null") == 0 or die "stash failed: $?";
 
 __END__

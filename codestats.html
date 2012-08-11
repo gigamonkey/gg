@@ -17,9 +17,13 @@ $(document).ready(function() {
             { geometry: 'line', mapping: { x: 'utc', y: 'lines' } },
             { geometry: 'point', mapping: { x: 'utc', y: 'lines', color: 'author' }, size: 3 }
         ],
-        scales: [ { type: 'color', aesthetic: 'color' } ],
+        scales: [
+            { type: 'time', aesthetic: 'x', legend: 'Day' },
+            { aesthetic: 'y', legend: 'Lines of code' },
+            { type: 'color', aesthetic: 'color' }
+        ],
     });
-    chart.render(1000, 300, d3.select('#chart'), codestats)
+    chart.render(1000, 600, d3.select('#chart'), codestats)
 });
 </script>
 </title>
