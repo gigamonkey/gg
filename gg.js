@@ -15,6 +15,7 @@
         var g = new Graphic(opts);
         _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
         _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
+        g.facets = Facets.fromSpec(spec.facets, g);
         return g;
     }
 
@@ -68,52 +69,7 @@
             .attr('width', this.width)
             .attr('height', this.height);
 
-        this.svg.append('rect')
-            .attr('class', 'base')
-            .attr('x', 0)
-            .attr('y', 0)
-            .attr('width', this.width)
-            .attr('height', this.height);
-
-        this.ensureScales();
-        this.prepareLayers(data);
-
-        var xAxis = d3.svg.axis()
-            .scale(this.scales['x'].d3Scale)
-            .tickSize(2*this.paddingY - this.height)
-            .orient('bottom');
-
-        var yAxis = d3.svg.axis()
-            .scale(this.scales['y'].d3Scale)
-            .tickSize(2*this.paddingX - this.width)
-            .orient('left');
-
-        this.svg.append('g')
-            .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (this.height - this.paddingY) + ')')
-            .call(xAxis);
-
-        this.svg.append('g')
-            .attr('class', 'y axis')
-            .attr('transform', 'translate(' + this.paddingX + ',0)')
-            .call(yAxis);
-
-        this.svg.append('g')
-            .attr('class', 'x legend')
-            .attr('transform', 'translate(' + (this.width / 2) + ',' + (this.height - 5) + ')')
-            .append('text')
-            .text(this.legend('x'))
-            .attr('text-anchor', 'middle');
-
-        this.svg.append('g')
-            .attr('class', 'y legend')
-            .attr('transform', 'translate(' + 10 + ',' + (this.height /2) + ') rotate(270)')
-            .append('text')
-            .text(this.legend('y'))
-            .attr('text-anchor', 'middle');
-
-        _.each(this.layers, function (e) { e.render(this); }, this);
-
+        this.facets.render(width, height, this.svg, data);
     };
 
     Graphic.prototype.layer = function (e) {
@@ -127,6 +83,88 @@
     Graphic.prototype.legend = function (aesthetic) {
         return this.scales[aesthetic].legend || this.layers[0].legend(aesthetic);
     };
+
+
+    ////////////////////////////////////////////////////////////////////////
+    // Facets -- every graphic has at least one facet. (The simple
+    // case is one trivial facet that renders the whole graphic.) The
+    // Facet object knows how to split up the data into groups that
+    // will each be rendered into a separate facet, and how to split
+    // up the area of the graphic appropriately. There are five
+    // layouts: horizontal, vertical, and horizontal flow, vertical
+    // flow, and grid. The horizontal layout divides the graphic into
+    // evenly sized elements that are arranged in a single row;
+    // vertical divides the graphic into evenly sized elements that
+    // are arranged in a single column. ...
+
+    var Facets = {};
+
+    Facets.fromSpec = function (spec, graphic) {
+        if (spec === undefined) {
+            return new SingleFacet(graphic);
+        } else {
+            throw 'Other facets not yet implemented.';
+        }
+    };
+
+    // Used when the whole graphic is renderered in a single facet.
+    function SingleFacet (graphic) {
+        this.graphic = graphic;
+    };
+
+    SingleFacet.prototype.render = function (width, height, svg, data) {
+        this.width  = width;
+        this.height = height;
+
+        svg.append('rect')
+            .attr('class', 'base')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('width', this.width)
+            .attr('height', this.height);
+
+        this.graphic.ensureScales();
+        this.graphic.prepareLayers(data);
+
+        var xAxis = d3.svg.axis()
+            .scale(this.graphic.scales['x'].d3Scale)
+            .tickSize(2*this.graphic.paddingY - this.height)
+            .orient('bottom');
+
+        var yAxis = d3.svg.axis()
+            .scale(this.graphic.scales['y'].d3Scale)
+            .tickSize(2*this.graphic.paddingX - this.width)
+            .orient('left');
+
+        svg.append('g')
+            .attr('class', 'x axis')
+            .attr('transform', 'translate(0,' + (this.height - this.graphic.paddingY) + ')')
+            .call(xAxis);
+
+        svg.append('g')
+            .attr('class', 'y axis')
+            .attr('transform', 'translate(' + this.graphic.paddingX + ',0)')
+            .call(yAxis);
+
+        svg.append('g')
+            .attr('class', 'x legend')
+            .attr('transform', 'translate(' + (this.width / 2) + ',' + (this.height - 5) + ')')
+            .append('text')
+            .text(this.graphic.legend('x'))
+            .attr('text-anchor', 'middle');
+
+        svg.append('g')
+            .attr('class', 'y legend')
+            .attr('transform', 'translate(' + 10 + ',' + (this.height /2) + ') rotate(270)')
+            .append('text')
+            .text(this.graphic.legend('y'))
+            .attr('text-anchor', 'middle');
+
+        _.each(this.graphic.layers, function (e) { e.render(this.graphic); }, this);
+
+    };
+
+
 
     ////////////////////////////////////////////////////////////////////////
     // Layers
