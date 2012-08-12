@@ -195,7 +195,7 @@
     };
 
     Layer.prototype.render = function (graphic) {
-        this.geometry.render(graphic.svg, this.newData);
+        this.geometry.render(graphic.svg.append('g'), this.newData);
     };
 
     Layer.prototype.dataValue = function (datum, aesthetic) {
@@ -246,9 +246,8 @@
 
     PointGeometry.prototype = new Geometry();
 
-    PointGeometry.prototype.render = function (svg, data) {
+    PointGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        var g = svg.append('g');
         g.selectAll('circle')
             .data(data)
             .enter()
@@ -267,12 +266,11 @@
 
     LineGeometry.prototype = new Geometry();
 
-    LineGeometry.prototype.render = function (svg, data) {
+    LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
         function x (d) { return layer.scaledValue(d, 'x'); }
         function y (d) { return layer.scaledValue(d, 'y'); }
 
-        var g =  svg.append('g');
         g.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
             .attr('fill', 'none')
@@ -287,13 +285,12 @@
 
     IntervalGeometry.prototype = new Geometry();
 
-    IntervalGeometry.prototype.render = function (svg, data) {
+    IntervalGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
         var width = this.width;
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        var g = svg.append('g');
         g.selectAll('rect')
             .data(data)
             .enter()
@@ -313,7 +310,7 @@
 
     BoxPlotGeometry.prototype = new Geometry();
 
-    BoxPlotGeometry.prototype.render = function (svg, data) {
+    BoxPlotGeometry.prototype.render = function (g, data) {
         // Data points are { group, median, q1, q3, upper, lower, outliers }
         var layer = this.layer;
         var width = this.width;
@@ -325,7 +322,6 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
 
-        var g = svg.append('g');
         var boxes = g.selectAll('g').data(data).enter();
 
         // IQR box
@@ -415,9 +411,8 @@
 
     TextGeometry.prototype = new Geometry();
 
-    TextGeometry.prototype.render = function (svg, data) {
+    TextGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        var g = svg.append('g');
         var text = g.selectAll('circle')
             .data(data)
             .enter()
