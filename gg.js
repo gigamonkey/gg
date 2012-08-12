@@ -160,11 +160,11 @@
             .text(this.graphic.legend('y'))
             .attr('text-anchor', 'middle');
 
-        _.each(this.graphic.layers, function (e) { e.render(this.graphic); }, this);
-
+        _.each(
+            this.graphic.layers,
+            function (layer) { layer.render(this.graphic.svg.append('g')); },
+            this);
     };
-
-
 
     ////////////////////////////////////////////////////////////////////////
     // Layers
@@ -239,8 +239,8 @@
         this.trainScales(this.newData);
     };
 
-    Layer.prototype.render = function (graphic) {
-        this.geometry.render(graphic.svg.append('g'), this.newData);
+    Layer.prototype.render = function (g) {
+        this.geometry.render(g, this.newData);
     };
 
     Layer.prototype.dataValue = function (datum, aesthetic) {
