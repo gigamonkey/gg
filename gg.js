@@ -6,9 +6,16 @@
         this.layers = [];
         this.scales = {};
 
-        opts = opts || {};
-        this.paddingX = opts.paddingX || opts.padding || 35;
-        this.paddingY = opts.paddingY || opts.padding || 35;
+        opts = opts || { padding: 35 };
+        this.paddingX = opts.paddingX || opts.padding;
+        this.paddingY = opts.paddingY || opts.padding;
+    }
+
+    Graphic.fromSpec = function (spec, opts) {
+        var g = new Graphic(opts);
+        _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
+        _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
+        return g;
     }
 
     Graphic.prototype.rangeFor = function (aesthetic) {
@@ -678,13 +685,6 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
-    function gg (spec, opts) {
-        var g = new Graphic(opts);
-        _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
-        _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
-        return g;
-    }
-
-    exports.gg = gg;
+    exports.gg = function gg (spec, opts) { return Graphic.fromSpec(spec, opts); }
 
 })(window);
