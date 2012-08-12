@@ -248,7 +248,8 @@
 
     PointGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
-        svg.append('g').selectAll('circle')
+        var g = svg.append('g');
+        g.selectAll('circle')
             .data(data)
             .enter()
             .append('circle')
@@ -271,7 +272,8 @@
         function x (d) { return layer.scaledValue(d, 'x'); }
         function y (d) { return layer.scaledValue(d, 'y'); }
 
-        svg.append('polyline')
+        var g =  svg.append('g');
+        g.append('polyline')
             .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
@@ -291,7 +293,8 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        svg.append('g').selectAll('rect')
+        var g = svg.append('g');
+        g.selectAll('rect')
             .data(data)
             .enter()
             .append('rect')
@@ -322,7 +325,8 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
 
-        var boxes = svg.append('g').selectAll('g').data(data).enter();
+        var g = svg.append('g');
+        var boxes = g.selectAll('g').data(data).enter();
 
         // IQR box
         boxes.append('rect')
@@ -388,8 +392,6 @@
             .attr('stroke', color)
             .attr('stroke-width', 1);
 
-
-
         // outliers
         var outliers = [];
         _.each(data, function (d) {
@@ -398,7 +400,7 @@
             });
         });
 
-        var o = svg.append('g').selectAll('circle.outliers').data(outliers).enter();
+        var o = g.selectAll('circle.outliers').data(outliers).enter();
         o.append('circle')
             .attr('class', 'boxplot outliers')
             .attr('cx', function (d) { return scale(d.group, 'x'); })
@@ -415,8 +417,8 @@
 
     TextGeometry.prototype.render = function (svg, data) {
         var layer = this.layer;
-        var area = svg.append('g');
-        var text = area.selectAll('circle')
+        var g = svg.append('g');
+        var text = g.selectAll('circle')
             .data(data)
             .enter()
             .append('text')
