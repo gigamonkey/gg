@@ -561,14 +561,13 @@
     // Statistics
 
     var Statistics = {
-        kinds: {
-            identity: IdentityStatistic,
-            bin:      BinStatistic,
-            box:      BoxPlotStatistic,
-            sum:      SumStatistic
-        },
-        fromSpec: function (spec) { return new this.kinds[spec.kind](spec); }
+        identity: IdentityStatistic,
+        bin:      BinStatistic,
+        box:      BoxPlotStatistic,
+        sum:      SumStatistic
     };
+
+    Statistics.fromSpec = function (spec) { return new this[spec.kind](spec); };
 
     function IdentityStatistic () {}
 
