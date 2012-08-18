@@ -87,7 +87,7 @@
         });
 
         var quadrants = gg({
-            layers: [ 
+            layers: [
                 {
                     geometry: 'point',
                     mapping: { x: 'x', y: 'y', size: 'size' }
