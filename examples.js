@@ -31,7 +31,7 @@
             }],
             scales: [
                 { type: 'categorical', aesthetic: 'x' },
-                { type: 'linear', aesthetic: 'y', min: 0 },
+                { type: 'linear', aesthetic: 'y', min: 0 }
             ]
         });
 
