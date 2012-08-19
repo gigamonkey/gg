@@ -114,17 +114,17 @@
         twoPopulations.render(w, h, ex(), data.twoPopulations);
         //boxplot.render(w, h, ex(), data.forBoxPlots);
 
-        var diamondsSum = gg({
-            layers: [{ geometry: 'point', mapping: { x: 'cut', y: 'clarity', size: 'prop', group: 'cut' }, statistic: { kind: 'nsum' } }],
-            scales: [
-                { aesthetic: 'x', type: 'categorical' },
-                { aesthetic: 'y', type: 'categorical' },
-                { aesthetic: 'size', range: [ 1, 5 ] }
-            ]
-        });
+        //var diamondsSum = gg({
+        //    layers: [{ geometry: 'point', mapping: { x: 'cut', y: 'clarity', size: 'prop', group: 'cut' }, statistic: { kind: 'nsum' } }],
+        //    scales: [
+        //        { aesthetic: 'x', type: 'categorical' },
+        //        { aesthetic: 'y', type: 'categorical' },
+        //        { aesthetic: 'size', range: [ 1, 5 ] }
+        //    ]
+        //});
 
-        d3.csv('data/diamonds_sample.csv', function(data) {
-            //diamondsSum.render(w, h, ex(), data);
-        });
+        //d3.csv('data/diamonds_sample.csv', function(data) {
+        //    //diamondsSum.render(w, h, ex(), data);
+        //});
     });
 })();
