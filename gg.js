@@ -210,7 +210,7 @@
     };
 
     Layer.prototype.aesthetics = function () {
-        return _.keys(this.mappings);
+        return _.without(_.keys(this.mappings), 'group');
     };
 
     Layer.prototype.trainScales = function (newData) {
@@ -247,6 +247,7 @@
 
     Layer.prototype.prepare = function (data) {
         this.newData = this.statistic.compute(data, this.mappings);
+        this.newData = groupData(this.newData, this.mappings.group);
         this.trainScales(this.newData);
     };
 
@@ -262,7 +263,8 @@
         if (this.mappings[aesthetic]) {
             var e = this;
             function key (d) { return e.dataValue(d, aesthetic); }
-            return key(_.min(data, key));
+            function min (d) { return _.min(d, key); }
+            return key(min(_.map(data, min)))
         } else {
             return this.statistic.dataRange(data)[0];
         }
@@ -272,7 +274,8 @@
         if (this.mappings[aesthetic]) {
             var e = this;
             function key (d) { return e.dataValue(d, aesthetic); }
-            return key(_.max(data, key));
+            function max (d) { return _.max(d, key); }
+            return key(max(_.map(data, max)))
         } else {
             return this.statistic.dataRange(data)[1];
         }
@@ -304,8 +307,16 @@
 
     PointGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        g.selectAll('circle')
+        var group = g.append('g');
+
+        var groupsEnter = group.selectAll('g.circles')
             .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'circles');
+
+        groupsEnter.selectAll('circle')
+            .data(Object)
             .enter()
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
@@ -327,8 +338,17 @@
         function x (d) { return layer.scaledValue(d, 'x'); }
         function y (d) { return layer.scaledValue(d, 'y'); }
 
-        g.append('polyline')
-            .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
+        var lineGroups = g.selectAll('g.lines')
+            .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'lines')
+
+        lineGroups.selectAll('polyline')
+            .data(function(d) { return [d]; })
+            .enter()
+            .append('polyline')
+            .attr('points', function(d) { return _.map(d, function (d) { return x(d) + ',' + y(d); }, this).join(' ') })
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
             .attr('stroke', attributeValue(layer, 'color', this.color));
@@ -347,8 +367,15 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        g.selectAll('rect')
+        var group = g.append('g');
+        var rectGroups = group.selectAll('g.rects')
             .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'rects');
+
+        rectGroups.selectAll('rect')
+            .data(Object)
             .enter()
             .append('rect')
             .attr('x', function (d) { return scale(d, 'x') - width/2; })
@@ -468,8 +495,16 @@
 
     TextGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        var text = g.selectAll('circle')
+        var area = g.append('g');
+
+        var textGroups = area.selectAll('g.texts')
             .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'texts');
+
+        var text = textGroups.selectAll('circle')
+            .data(Object)
             .enter()
             .append('text')
             .attr('class', 'graphicText')
@@ -640,7 +675,7 @@
                 density: density[i].y,
                 ncount: bin.y / data.length || 0
                 // Not clear to me how to impelment the ndensity metric
-                //ndensity: null 
+                //ndensity: null
             };
         });
     };
@@ -663,24 +698,29 @@
         });
     };
 
-    function NewSumStatistic (spec) {}
+    function NewSumStatistic (spec) {
+        this.x = spec.x;
+        this.y = spec.y;
+    }
 
     NewSumStatistic.prototype.compute = function (data, mappings) {
         // Sum stat expects to have a x and y aesthetics.
+        var x = this.x, y = this.y;
         var totalPoints = data.length;
         var summedPoints = [];
-        var values = _.groupBy(data, function(point) { return point[mappings.x]; });
-        _.each(values, function(values, xval) {
-            _.each(_.groupBy(values, function(point) { return point[mappings.y]; }), function(values, yval) {
-                var newPoint = {
-                    n: values.length,
-                    prop: (values.length / totalPoints)
-                };
-                newPoint[mappings.x] = xval;
-                newPoint[mappings.y] = yval;
-                summedPoints.push(newPoint);
-            });
-        });
+        var groupedData = groupData(data, mappings.x);
+        //var values = _.groupBy(data, function(point) { return point[mappings.x]; });
+        //_.each(values, function(values, xval) {
+        //    _.each(_.groupBy(values, function(point) { return point[mappings.y]; }), function(values, yval) {
+        //        var newPoint = {
+        //            n: values.length,
+        //            prop: (values.length / totalPoints)
+        //        };
+        //        newPoint[mappings.x] = xval;
+        //        newPoint[mappings.y] = yval;
+        //        summedPoints.push(newPoint);
+        //    });
+        //});
         return summedPoints;
     };
 
@@ -744,6 +784,16 @@
             return r;
         });
     };
+
+    /***
+      * Returns a grouping of data based on a data set's attribute.
+      * If groupBy is not defined returns the data nested as a single group.
+      */
+    function groupData(data, groupBy) {
+        // By default group the entire set together
+        if (_.isUndefined(groupBy) || _.isNull(groupBy)) return [data];
+        return _.values(_.groupBy(data, groupBy));
+    }
 
     function splitByGroups (data, group, variable) {
         var groups = {};
