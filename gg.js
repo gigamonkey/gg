@@ -695,32 +695,6 @@
         });
     };
 
-    function NewSumStatistic (spec) {
-        this.x = spec.x;
-        this.y = spec.y;
-    }
-
-    NewSumStatistic.prototype.compute = function (data, mappings) {
-        // Sum stat expects to have a x and y aesthetics.
-        var x = this.x, y = this.y;
-        var totalPoints = data.length;
-        var summedPoints = [];
-        var groupedData = groupData(data, mappings.x);
-        //var values = _.groupBy(data, function(point) { return point[mappings.x]; });
-        //_.each(values, function(values, xval) {
-        //    _.each(_.groupBy(values, function(point) { return point[mappings.y]; }), function(values, yval) {
-        //        var newPoint = {
-        //            n: values.length,
-        //            prop: (values.length / totalPoints)
-        //        };
-        //        newPoint[mappings.x] = xval;
-        //        newPoint[mappings.y] = yval;
-        //        summedPoints.push(newPoint);
-        //    });
-        //});
-        return summedPoints;
-    };
-
     function BoxPlotStatistic (spec) {
         this.group = spec.group || false;
         this.variable = spec.variable || 'value';
