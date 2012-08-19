@@ -13,7 +13,7 @@
 
         var linechart = gg({
             layers: [
-                { geometry: 'line', mapping: { x: 'd', y: 'r' }, color: 'red' },
+                { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
                 { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' },  show: "hover" }
             ]
         });
@@ -104,7 +104,7 @@
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); };
 
-        linechart.render(w, h, ex(), data.upward);
+        linechart.render(w, h, ex(), data.upwardSubjects);
         combined.render(w, h, ex(), data.upward);
         barchart.render(w, h, ex(), data.upward);
         quadrants.render(w, h, ex(), data.quadrants);
@@ -112,6 +112,6 @@
         semilog.render(w, h, ex(), data.semiLogData);
         heightHistogram.render(w, h, ex(), data.heightWeight);
         twoPopulations.render(w, h, ex(), data.twoPopulations);
-        //boxplot.render(w, h, ex(), data.forBoxPlots);
+        boxplot.render(w, h, ex(), data.forBoxPlots);
     });
 })();

@@ -234,20 +234,9 @@
         }, this);
     };
 
-    Layer.prototype.remapData = function (data) {
-        var mappings = this.mappings;
-        return _.map(data, function(point) {
-            var remapped = {};
-            _.each(mappings, function(property, aesthetic) {
-                remapped[aesthetic] = point[property];
-            });
-            return remapped;
-        });
-    };
-
     Layer.prototype.prepare = function (data) {
         this.newData = this.statistic.compute(data, this.mappings);
-        this.newData = groupData(this.newData, this.mappings.group);
+        this.newData = _.values(groupData(this.newData, this.mappings.group));
         this.trainScales(this.newData);
     };
 
@@ -335,8 +324,9 @@
 
     LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function x (d) { return layer.scaledValue(d, 'x'); }
-        function y (d) { return layer.scaledValue(d, 'y'); }
+        function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
+        var color = ('color' in layer.mappings) ?
+            function(d) { return scale(d[0], 'color'); } : this.color;
 
         var lineGroups = g.selectAll('g.lines')
             .data(data)
@@ -348,10 +338,10 @@
             .data(function(d) { return [d]; })
             .enter()
             .append('polyline')
-            .attr('points', function(d) { return _.map(d, function (d) { return x(d) + ',' + y(d); }, this).join(' ') })
+            .attr('points', function(d) { return _.map(d, function (d) { return scale(d, 'x') + ',' + scale(d, 'y'); }, this).join(' ') })
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
-            .attr('stroke', attributeValue(layer, 'color', this.color));
+            .attr('stroke', color);
     };
 
     function IntervalGeometry (spec) {
@@ -367,8 +357,7 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        var group = g.append('g');
-        var rectGroups = group.selectAll('g.rects')
+        var rectGroups = g.selectAll('g.rects')
             .data(data)
             .enter()
             .append('g')
@@ -404,7 +393,13 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
 
-        var boxes = g.selectAll('g').data(data).enter();
+        var boxGroups = g.selectAll('g.boxes')
+            .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'boxes');
+
+        var boxes = boxGroups.selectAll('g').data(Object).enter();
 
         // IQR box
         boxes.append('rect')
@@ -607,7 +602,7 @@
 
     CategoricalScale.prototype.defaultDomain = function (layer, data, aesthetic) {
         function val (d) { return layer.dataValue(d, aesthetic); }
-        var values = _.uniq(_.map(data, val));
+        var values = _.uniq(_.map(_.flatten(data), val));
         values.sort(function (a,b) { return a - b; });
         this.values(values);
     };
@@ -686,14 +681,17 @@
     }
 
     SumStatistic.prototype.compute = function (data) {
-        var groups = splitByGroups(data, this.group, this.variable);
+        var groups = groupData(data, this.group),
+            value = _.bind(function(point) {
+                return point[this.variable];
+            }, this);
         return _.map(groups, function (values, name) {
             return {
                 group: name,
                 count: values.length,
-                sum: d3.sum(values),
-                min: d3.min(values),
-                max: d3.max(values)
+                sum: d3.sum(values, value),
+                min: d3.min(values, value),
+                max: d3.max(values, value)
             };
         });
     };
@@ -704,9 +702,10 @@
     }
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
+        var flattened = _.flatten(data);
         return [
-            _.min(_.pluck(data, 'min')),
-            _.max(_.pluck(data, 'max'))
+            _.min(_.pluck(flattened, 'min')),
+            _.max(_.pluck(flattened, 'max'))
         ];
     };
 
@@ -766,7 +765,7 @@
     function groupData(data, groupBy) {
         // By default group the entire set together
         if (_.isUndefined(groupBy) || _.isNull(groupBy)) return [data];
-        return _.values(_.groupBy(data, groupBy));
+        return _.groupBy(data, groupBy);
     }
 
     function splitByGroups (data, group, variable) {
