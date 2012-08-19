@@ -23,7 +23,7 @@
             y += Math.round(Math.abs(20 - Math.random() * 30));
             return _.map(subjects, function(subject, i) {
                 var skew = i + 1;
-                return { d: x * skew, r: y * skew, subject: subject };
+                return { d: x, r: y * (Math.random() * skew), subject: subject };
             })
         }));
     }());
