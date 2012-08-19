@@ -35,19 +35,6 @@
             ]
         });
 
-        var nhistogram = gg({
-            layers: [{
-                geometry: 'interval',
-                mapping: { x: 'group', y: 'count', color: 'group' },
-                width: 20,
-                statistic: { kind: 'sum', group: 'who', variable: 'purchases' }
-            }],
-            scales: [
-                { type: 'categorical', aesthetic: 'x' },
-                { type: 'linear', aesthetic: 'y', min: 0 }
-            ]
-        });
-
         var combined = gg({
             layers: [
                 { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
@@ -125,10 +112,10 @@
         semilog.render(w, h, ex(), data.semiLogData);
         heightHistogram.render(w, h, ex(), data.heightWeight);
         twoPopulations.render(w, h, ex(), data.twoPopulations);
-        boxplot.render(w, h, ex(), data.forBoxPlots);
+        //boxplot.render(w, h, ex(), data.forBoxPlots);
 
         var diamondsSum = gg({
-            layers: [{ geometry: 'point', mapping: { x: 'cut', y: 'clarity', size: 'prop' }, statistic: { kind: 'nsum' } }],
+            layers: [{ geometry: 'point', mapping: { x: 'cut', y: 'clarity', size: 'prop', group: 'cut' }, statistic: { kind: 'nsum' } }],
             scales: [
                 { aesthetic: 'x', type: 'categorical' },
                 { aesthetic: 'y', type: 'categorical' },
@@ -137,8 +124,7 @@
         });
 
         d3.csv('data/diamonds_sample.csv', function(data) {
-            diamondsSum.render(w, h, ex(), data);
-            
+            //diamondsSum.render(w, h, ex(), data);
         });
     });
 })();
