@@ -296,13 +296,7 @@
 
     PointGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        var groups = g.selectAll('g.circles')
-            .data(data)
-            .enter()
-            .append('g')
-            .attr('class', 'circles');
-
-        groups.selectAll('circle')
+        groups(g, 'circles', data).selectAll('circle')
             .data(Object)
             .enter()
             .append('circle')
@@ -326,13 +320,7 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d[0], 'color'); } : this.color;
 
-        var groups = g.selectAll('g.lines')
-            .data(data)
-            .enter()
-            .append('g')
-            .attr('class', 'lines')
-
-        groups.selectAll('polyline')
+        groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
             .enter()
             .append('polyline')
@@ -355,13 +343,7 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        var groups = g.selectAll('g.rects')
-            .data(data)
-            .enter()
-            .append('g')
-            .attr('class', 'rects');
-
-        groups.selectAll('rect')
+        groups(g, 'rects', data).selectAll('rect')
             .data(Object)
             .enter()
             .append('rect')
@@ -391,13 +373,7 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
 
-        var groups = g.selectAll('g.boxes')
-            .data(data)
-            .enter()
-            .append('g')
-            .attr('class', 'boxes');
-
-        var boxes = groups.selectAll('g').data(Object).enter();
+        var boxes = groups(g, 'boxes', data).selectAll('g').data(Object).enter();
 
         // IQR box
         boxes.append('rect')
@@ -489,14 +465,7 @@
     TextGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
         var area = g.append('g');
-
-        var groups = area.selectAll('g.texts')
-            .data(data)
-            .enter()
-            .append('g')
-            .attr('class', 'texts');
-
-        var text = groups.selectAll('circle')
+        var text = groups(area, 'texts', data).selectAll('circle')
             .data(Object)
             .enter()
             .append('text')
@@ -509,6 +478,15 @@
             text.attr('class', 'graphicText showOnHover');
         }
     };
+
+    function groups (g, clazz, data) {
+        return g.selectAll('g.' + clazz)
+            .data(data)
+            .enter()
+            .append('g')
+            .attr('class', clazz);
+    }
+
 
     ////////////////////////////////////////////////////////////////////////
     // Scales -- a scale is used to map from data values to aesthetic
