@@ -296,15 +296,13 @@
 
     PointGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        var group = g.append('g');
-
-        var groupsEnter = group.selectAll('g.circles')
+        var groups = g.selectAll('g.circles')
             .data(data)
             .enter()
             .append('g')
             .attr('class', 'circles');
 
-        groupsEnter.selectAll('circle')
+        groups.selectAll('circle')
             .data(Object)
             .enter()
             .append('circle')
@@ -328,13 +326,13 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d[0], 'color'); } : this.color;
 
-        var lineGroups = g.selectAll('g.lines')
+        var groups = g.selectAll('g.lines')
             .data(data)
             .enter()
             .append('g')
             .attr('class', 'lines')
 
-        lineGroups.selectAll('polyline')
+        groups.selectAll('polyline')
             .data(function(d) { return [d]; })
             .enter()
             .append('polyline')
@@ -357,13 +355,13 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        var rectGroups = g.selectAll('g.rects')
+        var groups = g.selectAll('g.rects')
             .data(data)
             .enter()
             .append('g')
             .attr('class', 'rects');
 
-        rectGroups.selectAll('rect')
+        groups.selectAll('rect')
             .data(Object)
             .enter()
             .append('rect')
@@ -393,13 +391,13 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
 
-        var boxGroups = g.selectAll('g.boxes')
+        var groups = g.selectAll('g.boxes')
             .data(data)
             .enter()
             .append('g')
             .attr('class', 'boxes');
 
-        var boxes = boxGroups.selectAll('g').data(Object).enter();
+        var boxes = groups.selectAll('g').data(Object).enter();
 
         // IQR box
         boxes.append('rect')
@@ -492,13 +490,13 @@
         var layer = this.layer;
         var area = g.append('g');
 
-        var textGroups = area.selectAll('g.texts')
+        var groups = area.selectAll('g.texts')
             .data(data)
             .enter()
             .append('g')
             .attr('class', 'texts');
 
-        var text = textGroups.selectAll('circle')
+        var text = groups.selectAll('circle')
             .data(Object)
             .enter()
             .append('text')
@@ -642,8 +640,7 @@
         identity: IdentityStatistic,
         bin:      BinStatistic,
         box:      BoxPlotStatistic,
-        sum:      SumStatistic,
-        nsum:     NewSumStatistic
+        sum:      SumStatistic
     };
 
     Statistics.fromSpec = function (spec) { return new this[spec.kind](spec); };
