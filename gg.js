@@ -160,11 +160,11 @@
             .text(this.graphic.legend('y'))
             .attr('text-anchor', 'middle');
 
-        _.each(this.graphic.layers, function (e) { e.render(this.graphic); }, this);
-
+        _.each(
+            this.graphic.layers,
+            function (layer) { layer.render(this.graphic.svg.append('g')); },
+            this);
     };
-
-
 
     ////////////////////////////////////////////////////////////////////////
     // Layers
@@ -210,7 +210,7 @@
     };
 
     Layer.prototype.aesthetics = function () {
-        return _.keys(this.mappings);
+        return _.without(_.keys(this.mappings), 'group');
     };
 
     Layer.prototype.trainScales = function (newData) {
@@ -235,12 +235,13 @@
     };
 
     Layer.prototype.prepare = function (data) {
-        this.newData = this.statistic.compute(data);
+        this.newData = this.statistic.compute(data, this.mappings);
+        this.newData = _.values(groupData(this.newData, this.mappings.group));
         this.trainScales(this.newData);
     };
 
-    Layer.prototype.render = function (graphic) {
-        this.geometry.render(graphic.svg.append('g'), this.newData);
+    Layer.prototype.render = function (g) {
+        this.geometry.render(g, this.newData);
     };
 
     Layer.prototype.dataValue = function (datum, aesthetic) {
@@ -251,7 +252,8 @@
         if (this.mappings[aesthetic]) {
             var e = this;
             function key (d) { return e.dataValue(d, aesthetic); }
-            return key(_.min(data, key));
+            function min (d) { return _.min(d, key); }
+            return key(min(_.map(data, min)))
         } else {
             return this.statistic.dataRange(data)[0];
         }
@@ -261,7 +263,8 @@
         if (this.mappings[aesthetic]) {
             var e = this;
             function key (d) { return e.dataValue(d, aesthetic); }
-            return key(_.max(data, key));
+            function max (d) { return _.max(d, key); }
+            return key(max(_.map(data, max)))
         } else {
             return this.statistic.dataRange(data)[1];
         }
@@ -293,8 +296,8 @@
 
     PointGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        g.selectAll('circle')
-            .data(data)
+        groups(g, 'circles', data).selectAll('circle')
+            .data(Object)
             .enter()
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
@@ -313,14 +316,18 @@
 
     LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function x (d) { return layer.scaledValue(d, 'x'); }
-        function y (d) { return layer.scaledValue(d, 'y'); }
+        function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
+        var color = ('color' in layer.mappings) ?
+            function(d) { return scale(d[0], 'color'); } : this.color;
 
-        g.append('polyline')
-            .attr('points', _.map(data, function (d) { return x(d) + ',' + y(d); }, this).join(' '))
+        groups(g, 'lines', data).selectAll('polyline')
+            .data(function(d) { return [d]; })
+            .enter()
+            .append('polyline')
+            .attr('points', function(d) { return _.map(d, function (d) { return scale(d, 'x') + ',' + scale(d, 'y'); }, this).join(' ') })
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
-            .attr('stroke', attributeValue(layer, 'color', this.color));
+            .attr('stroke', color);
     };
 
     function IntervalGeometry (spec) {
@@ -336,8 +343,8 @@
 
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
 
-        g.selectAll('rect')
-            .data(data)
+        groups(g, 'rects', data).selectAll('rect')
+            .data(Object)
             .enter()
             .append('rect')
             .attr('x', function (d) { return scale(d, 'x') - width/2; })
@@ -346,7 +353,6 @@
             .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); })
             .attr('fill', attributeValue(layer, 'color', this.color));
     };
-
 
     function BoxPlotGeometry (spec) {
         this.width = spec.width || 10;
@@ -367,7 +373,7 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
 
-        var boxes = g.selectAll('g').data(data).enter();
+        var boxes = groups(g, 'boxes', data).selectAll('g').data(Object).enter();
 
         // IQR box
         boxes.append('rect')
@@ -458,8 +464,9 @@
 
     TextGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        var text = g.selectAll('circle')
-            .data(data)
+        var area = g.append('g');
+        var text = groups(area, 'texts', data).selectAll('circle')
+            .data(Object)
             .enter()
             .append('text')
             .attr('class', 'graphicText')
@@ -471,6 +478,15 @@
             text.attr('class', 'graphicText showOnHover');
         }
     };
+
+    function groups (g, clazz, data) {
+        return g.selectAll('g.' + clazz)
+            .data(data)
+            .enter()
+            .append('g')
+            .attr('class', clazz);
+    }
+
 
     ////////////////////////////////////////////////////////////////////////
     // Scales -- a scale is used to map from data values to aesthetic
@@ -562,7 +578,7 @@
 
     CategoricalScale.prototype.defaultDomain = function (layer, data, aesthetic) {
         function val (d) { return layer.dataValue(d, aesthetic); }
-        var values = _.uniq(_.map(data, val));
+        var values = _.uniq(_.map(_.flatten(data), val));
         values.sort(function (a,b) { return a - b; });
         this.values(values);
     };
@@ -618,9 +634,19 @@
 
     BinStatistic.prototype.compute = function (data) {
         var values = _.pluck(data, this.variable);
-        var bins = d3.layout.histogram().bins(this.bins)(values);
-        return _.map(bins, function (bin, i) {
-            return { bin: i, count: bin.y };
+        var histogram = d3.layout.histogram().bins(this.bins);
+        var frequency = histogram(values);
+        histogram.frequency(false);
+        var density = histogram(values);
+        return _.map(frequency, function (bin, i) {
+            return {
+                bin: i,
+                count: bin.y,
+                density: density[i].y,
+                ncount: bin.y / data.length || 0
+                // Not clear to me how to impelment the ndensity metric
+                //ndensity: null
+            };
         });
     };
 
@@ -630,14 +656,17 @@
     }
 
     SumStatistic.prototype.compute = function (data) {
-        var groups = splitByGroups(data, this.group, this.variable);
+        var groups = groupData(data, this.group),
+            value = _.bind(function(point) {
+                return point[this.variable];
+            }, this);
         return _.map(groups, function (values, name) {
             return {
                 group: name,
                 count: values.length,
-                sum: d3.sum(values),
-                min: d3.min(values),
-                max: d3.max(values)
+                sum: d3.sum(values, value),
+                min: d3.min(values, value),
+                max: d3.max(values, value)
             };
         });
     };
@@ -648,9 +677,10 @@
     }
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
+        var flattened = _.flatten(data);
         return [
-            _.min(_.pluck(data, 'min')),
-            _.max(_.pluck(data, 'max'))
+            _.min(_.pluck(flattened, 'min')),
+            _.max(_.pluck(flattened, 'max'))
         ];
     };
 
@@ -702,6 +732,16 @@
             return r;
         });
     };
+
+    /***
+      * Returns a grouping of data based on a data set's attribute.
+      * If groupBy is not defined returns the data nested as a single group.
+      */
+    function groupData(data, groupBy) {
+        // By default group the entire set together
+        if (_.isUndefined(groupBy) || _.isNull(groupBy)) return [data];
+        return _.groupBy(data, groupBy);
+    }
 
     function splitByGroups (data, group, variable) {
         var groups = {};
