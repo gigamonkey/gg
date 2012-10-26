@@ -1,0 +1,5 @@
+* Tricky plots to draw
+
+* Other pitfalls
+
+* Crazy ideas
