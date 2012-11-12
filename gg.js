@@ -1,7 +1,5 @@
 (function (exports, undefined) {
 
-    var json = JSON.stringify;
-
     function Graphic (opts) {
         this.layers = [];
         this.scales = {};
