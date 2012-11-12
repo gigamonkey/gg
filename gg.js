@@ -1,4 +1,4 @@
-;(function (exports, undefined) {
+(function (exports, undefined) {
 
     var json = JSON.stringify;
 
@@ -17,7 +17,7 @@
         _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
         g.facets = Facets.fromSpec(spec.facets, g);
         return g;
-    }
+    };
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
@@ -33,7 +33,7 @@
         var aesthetics = _.union(_.flatten(_.invoke(this.layers, 'aesthetics')));
         _.each(aesthetics, function (aesthetic) {
             if (! this.scales[aesthetic]) {
-                this.scales[aesthetic] = Scale.default(aesthetic);
+                this.scales[aesthetic] = Scale.defaultAesthetic(aesthetic);
             }
         }, this);
     };
@@ -515,7 +515,7 @@
         return s;
     };
 
-    Scale.default = function (aesthetic) {
+    Scale.defaultAesthetic = function (aesthetic) {
         var s = new {
             x:     LinearScale,
             y:     LinearScale,
