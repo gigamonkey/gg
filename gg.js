@@ -299,6 +299,12 @@
         groups(g, 'circles', data).selectAll('circle')
             .data(Object)
             .enter()
+            .append('g')
+            .attr('class', 'circles');
+
+        groupsEnter.selectAll('circle')
+            .data(Object)
+            .enter()
             .append('circle')
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
@@ -346,6 +352,12 @@
         groups(g, 'rects', data).selectAll('rect')
             .data(Object)
             .enter()
+            .append('g')
+            .attr('class', 'rects');
+
+        rectGroups.selectAll('rect')
+            .data(Object)
+            .enter()
             .append('rect')
             .attr('x', function (d) { return scale(d, 'x') - width/2; })
             .attr('y', function (d) { return scale(d, 'y'); })
@@ -372,6 +384,12 @@
 
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
+      
+        var boxGroups = g.selectAll('g.boxes')
+            .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'boxes');
 
         var boxes = groups(g, 'boxes', data).selectAll('g').data(Object).enter();
 
@@ -466,6 +484,12 @@
         var layer = this.layer;
         var area = g.append('g');
         var text = groups(area, 'texts', data).selectAll('circle')
+            .data(Object)
+            .enter()
+            .append('g')
+            .attr('class', 'texts');
+
+        var text = textGroups.selectAll('circle')
             .data(Object)
             .enter()
             .append('text')
