@@ -16,7 +16,7 @@
                 { geometry: 'line', mapping: { x: 'd', y: 'r' } },
             ],
             scales: [
-                { type: 'linear', aesthetic: 'y', symmetric: true }
+                { type: 'linear', aesthetic: 'y', center: 0 }
             ]
         });
 

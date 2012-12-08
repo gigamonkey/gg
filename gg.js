@@ -512,7 +512,7 @@
         spec.max       !== undefined && (s.max = spec.max);
         spec.range     !== undefined && s.range(spec.range);
         spec.legend    !== undefined && (s.legend = spec.legend);
-        spec.symmetric !== undefined && (s.symmetric = spec.symmetric);
+        spec.center    !== undefined && (s.center = spec.center);
         return s;
     };
 
@@ -538,9 +538,9 @@
             this.max = layer.graphic.dataMax(data, aesthetic);
         }
         this.domainSet = true;
-        if (this.symmetric) {
-            extreme = Math.max(Math.abs(this.min), this.max);
-            this.domain([-1 * extreme, extreme]);
+        if (this.center !== undefined) {
+            extreme = Math.max(this.max - this.center, Math.abs(this.min - this.center))
+            this.domain([this.center - extreme, this.center + extreme]);
         } else {
             this.domain([this.min, this.max]);
         }
