@@ -13,6 +13,21 @@
         });
     }());
 
+    // Data above and below zero.
+    gg.sampleData.toBeCentered = (function () {
+        var x = 0;
+        var y = 0;
+        return _.map(_.range(20), function () {
+            x += Math.round(Math.random() * 30);
+            if (Math.random() > .5) {
+                y = (Math.round(Math.random() * 30));
+            } else {
+                y = -1 * (Math.round(Math.random() * 20))
+            }
+            return { d: x, r: y };
+        });
+    }());
+
     // Random upward trending data for four subjects
     gg.sampleData.upwardSubjects = (function () {
         var subjects = ['a', 'b', 'c', 'd'];
@@ -27,6 +42,8 @@
             })
         }));
     }());
+
+
 
     // Random purchases by four different groups
     gg.sampleData.purchases = (function () {
