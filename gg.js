@@ -512,6 +512,7 @@
         spec.max       !== undefined && (s.max = spec.max);
         spec.range     !== undefined && s.range(spec.range);
         spec.legend    !== undefined && (s.legend = spec.legend);
+        spec.symmetric !== undefined && (s.symmetric = spec.symmetric);
         return s;
     };
 
@@ -528,6 +529,8 @@
     };
 
     Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
+        var extreme;
+
         if (this.min === undefined) {
             this.min = layer.graphic.dataMin(data, aesthetic);
         }
@@ -535,7 +538,12 @@
             this.max = layer.graphic.dataMax(data, aesthetic);
         }
         this.domainSet = true;
-        this.domain([this.min, this.max]);
+        if (this.symmetric) {
+            extreme = Math.max(Math.abs(this.min), this.max);
+            this.domain([-1 * extreme, extreme]);
+        } else {
+            this.domain([this.min, this.max]);
+        }
     };
 
     Scale.prototype.domain = function (interval) {
