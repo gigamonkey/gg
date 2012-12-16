@@ -1,7 +1,5 @@
 ;(function (exports, undefined) {
 
-    var json = JSON.stringify;
-
     function Graphic (opts) {
         this.layers = [];
         this.scales = {};
@@ -17,7 +15,7 @@
         _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
         g.facets = Facets.fromSpec(spec.facets, g);
         return g;
-    }
+    };
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
@@ -33,7 +31,7 @@
         var aesthetics = _.union(_.flatten(_.invoke(this.layers, 'aesthetics')));
         _.each(aesthetics, function (aesthetic) {
             if (! this.scales[aesthetic]) {
-                this.scales[aesthetic] = Scale.default(aesthetic);
+                this.scales[aesthetic] = Scale.defaultFor(aesthetic);
             }
         }, this);
     };
@@ -184,6 +182,7 @@
         var geometry = new {
             point: PointGeometry,
             line: LineGeometry,
+            area: AreaGeometry,
             interval: IntervalGeometry,
             box: BoxPlotGeometry,
             text: TextGeometry
@@ -307,6 +306,38 @@
             .attr('r', attributeValue(layer, 'size', this.size));
     };
 
+    function AreaGeometry (spec) {
+        this.color = spec.color || 'black';
+        this.width = spec.width || 2;
+        this.fill = spec.fill || "black";
+        this.alpha = spec.alpha || 1;
+        this.stroke = spec.stroke || this.fill;
+    }
+
+    AreaGeometry.prototype =  new Geometry();
+
+    AreaGeometry.prototype.render = function (g, data) {
+        var layer = this.layer;
+        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[key], aesthetic, d); }
+
+        var area = d3.svg.area()
+                         .x(function (d) { return scale(d, "x", "x") })
+                         .y1(function(d) { return scale(d, "y1", "y") })
+                         .y0(function (d) { return scale(d, "y0", "y") })
+                         .interpolate("basis")
+
+        groups(g, 'lines', data).selectAll('polyline')
+            .data(function(d) { return [d]; })
+            .enter()
+            .append("svg:path")
+            .attr("d", area)
+            .attr('stroke-width', this.width)
+            .attr('stroke', this.stroke)
+            .attr('fill', this.fill)
+            .attr('fill-opacity', this.alpha)
+            .attr('stroke-opacity', this.alpha)
+    };
+
     function LineGeometry (spec) {
         this.color = spec.color || 'black';
         this.width = spec.width || 2;
@@ -320,11 +351,16 @@
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d[0], 'color'); } : this.color;
 
+        var line = d3.svg.line()
+                         .x(function (d) { return scale(d, "x") })
+                         .y(function (d) { return scale(d, "y") })
+                         .interpolate("basis")
+
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
             .enter()
-            .append('polyline')
-            .attr('points', function(d) { return _.map(d, function (d) { return scale(d, 'x') + ',' + scale(d, 'y'); }, this).join(' ') })
+            .append("svg:path")
+            .attr("d", line)
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
             .attr('stroke', color);
@@ -516,11 +552,14 @@
         return s;
     };
 
-    Scale.default = function (aesthetic) {
+    Scale.defaultFor = function (aesthetic) {
         var s = new {
             x:     LinearScale,
             y:     LinearScale,
+            y0:    LinearScale,
+            y1:    LinearScale,
             color: ColorScale,
+            fill:  ColorScale,
             size:  LinearScale,
             text:  TextScale
         }[aesthetic]();
