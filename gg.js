@@ -1,6 +1,14 @@
 ;(function (exports, undefined) {
 
+    var _ = exports._;
+    var d3 = exports.d3;
     var json = JSON.stringify;
+
+    // Provide Node compatibility
+    if (!_ && !d3 && typeof require !== 'undefined') {
+        d3 = require('d3');
+        _ = require('underscore');
+    }
 
     function Graphic (opts) {
         this.layers = [];
@@ -764,4 +772,5 @@
 
     exports.gg = function gg (spec, opts) { return Graphic.fromSpec(spec, opts); }
 
-})(window);
+})(this);
+
