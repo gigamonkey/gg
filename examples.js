@@ -11,6 +11,15 @@
             layers: [{ geometry: 'point', mapping: { x: 'd', y: 'r' } }]
         });
 
+        var symmetric = gg({
+            layers: [
+                { geometry: 'line', mapping: { x: 'd', y: 'r' } },
+            ],
+            scales: [
+                { type: 'linear', aesthetic: 'y', center: 0 }
+            ]
+        });
+
         var linechart = gg({
             layers: [
                 { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
@@ -104,6 +113,8 @@
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); };
 
+
+        //symmetric.render(w, h, ex(), data.toBeCentered);
         linechart.render(w, h, ex(), data.upwardSubjects);
         combined.render(w, h, ex(), data.upward);
         barchart.render(w, h, ex(), data.upward);
