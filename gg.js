@@ -821,4 +821,3 @@
     exports.gg = function gg (spec, opts) { return Graphic.fromSpec(spec, opts); }
 
 })(this);
-
