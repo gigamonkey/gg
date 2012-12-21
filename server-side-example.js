@@ -28,11 +28,9 @@ gg.sampleData.upwardSubjects = (function () {
 }());
 
 var div = d3.select(document.createElement('div'));
-
 var data = gg.sampleData;
 var w    = 300;
 var h    = 200;
-var ex   = function () { return d3.select('#examples').append('span'); };
 
 linechart.render(w, h, div, data.upwardSubjects);
 console.log(div.html());
