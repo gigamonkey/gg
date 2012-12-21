@@ -640,6 +640,10 @@
 
     ColorScale.prototype = new CategoricalScale();
 
+    ColorScale.prototype.range = function (interval) {
+        this.d3Scale = this.d3Scale.range(interval);
+    };
+
     function TextScale(){ }
 
     TextScale.prototype = new Scale();
