@@ -79,6 +79,13 @@
         this.facets.render(width, height, this.svg, data);
     };
 
+    Graphic.prototype.renderer = function (width, height, where) {
+        return _.bind(function (data) {
+            this.render(width, height, where, data);
+        }, this);
+    };
+
+
     Graphic.prototype.layer = function (e) {
         this.layers.push(e);
     };
@@ -102,7 +109,9 @@
     // flow, and grid. The horizontal layout divides the graphic into
     // evenly sized elements that are arranged in a single row;
     // vertical divides the graphic into evenly sized elements that
-    // are arranged in a single column. ...
+    // are arranged in a single column. ... (Note, none of this is
+    // actually implemented yet except the trivial single facet case.
+    // -Peter)
 
     var Facets = {};
 
@@ -189,12 +198,12 @@
 
     Layer.fromSpec = function (spec, graphic) {
         var geometry = new {
-            point: PointGeometry,
-            line: LineGeometry,
-            area: AreaGeometry,
+            point:    PointGeometry,
+            line:     LineGeometry,
+            area:     AreaGeometry,
             interval: IntervalGeometry,
-            box: BoxPlotGeometry,
-            text: TextGeometry
+            box:      BoxPlotGeometry,
+            text:     TextGeometry
         }[spec.geometry || 'point'](spec);
 
         var layer = new Layer(geometry, graphic);
@@ -316,10 +325,10 @@
     };
 
     function AreaGeometry (spec) {
-        this.color = spec.color || 'black';
-        this.width = spec.width || 2;
-        this.fill = spec.fill || "black";
-        this.alpha = spec.alpha || 1;
+        this.color  = spec.color  || 'black';
+        this.width  = spec.width  || 2;
+        this.fill   = spec.fill   || "black";
+        this.alpha  = spec.alpha  || 1;
         this.stroke = spec.stroke || this.fill;
     }
 
