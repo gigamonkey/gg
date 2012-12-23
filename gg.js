@@ -318,13 +318,13 @@
 
     AreaGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[key], aesthetic, d); }
+        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[layer.mappings[key]], aesthetic, d); }
 
         var area = d3.svg.area()
-                         .x(function (d) { return scale(d, "x", "x") })
-                         .y1(function(d) { return scale(d, "y1", "y") })
-                         .y0(function (d) { return scale(d, "y0", "y") })
-                         .interpolate("basis")
+            .x(function (d) { return scale(d, "x", "x") })
+            .y1(function(d) { return scale(d, "y1", "y") })
+            .y0(function (d) { return scale(d, "y0", "y") })
+            .interpolate("basis");
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
@@ -335,7 +335,7 @@
             .attr('stroke', this.stroke)
             .attr('fill', this.fill)
             .attr('fill-opacity', this.alpha)
-            .attr('stroke-opacity', this.alpha)
+            .attr('stroke-opacity', this.alpha);
     };
 
     function LineGeometry (spec) {

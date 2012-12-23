@@ -106,6 +106,18 @@
             scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
         });
 
+        var area = gg({
+            layers: [
+                { geometry: 'area', mapping: { x: 'd', y: 'r', y0: 'r', y1: 'r', group: 'subject', color: 'subject'} }
+            ],
+            scales: [
+                { aesthetic: 'y0', type: 'linear' },
+                { aesthetic: 'y1', type: 'linear' }
+
+            ]
+        });
+
+
         // ... and render 'em
 
         var data = gg.sampleData;
@@ -124,5 +136,6 @@
         heightHistogram.render(w, h, ex(), data.heightWeight);
         twoPopulations.render(w, h, ex(), data.twoPopulations);
         boxplot.render(w, h, ex(), data.forBoxPlots);
+        area.render(w, h, ex(), data.upwardSubjects);
     });
 })();
