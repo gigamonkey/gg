@@ -24,6 +24,9 @@
             layers: [
                 { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
                 { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' },  show: "hover" }
+            ],
+            scales: [
+                { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
             ]
         });
 
@@ -112,7 +115,6 @@
         var w    = 300;
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); };
-
 
         //symmetric.render(w, h, ex(), data.toBeCentered);
         linechart.render(w, h, ex(), data.upwardSubjects);
