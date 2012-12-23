@@ -24,6 +24,9 @@
             layers: [
                 { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
                 { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' },  show: "hover" }
+            ],
+            scales: [
+                { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
             ]
         });
 
@@ -125,17 +128,16 @@
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); };
 
-
         //symmetric.render(w, h, ex(), data.toBeCentered);
-        linechart.render(w, h, ex(), data.upwardSubjects);
-        combined.render(w, h, ex(), data.upward);
-        barchart.render(w, h, ex(), data.upward);
-        quadrants.render(w, h, ex(), data.quadrants);
-        histogram.render(w, h, ex(), data.purchases);
-        semilog.render(w, h, ex(), data.semiLogData);
-        heightHistogram.render(w, h, ex(), data.heightWeight);
-        twoPopulations.render(w, h, ex(), data.twoPopulations);
-        boxplot.render(w, h, ex(), data.forBoxPlots);
-        area.render(w, h, ex(), data.upwardSubjects);
+        linechart.renderer(w, h, ex())(data.upwardSubjects);
+        combined.renderer(w, h, ex())(data.upward);
+        barchart.renderer(w, h, ex())(data.upward);
+        quadrants.renderer(w, h, ex())(data.quadrants);
+        histogram.renderer(w, h, ex())(data.purchases);
+        semilog.renderer(w, h, ex())(data.semiLogData);
+        heightHistogram.renderer(w, h, ex())(data.heightWeight);
+        twoPopulations.renderer(w, h, ex())(data.twoPopulations);
+        boxplot.renderer(w, h, ex())(data.forBoxPlots);
+        area.renderer(w, h, ex())(data.upwardSubjects);
     });
 })();
