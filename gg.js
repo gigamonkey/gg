@@ -370,9 +370,9 @@
             function(d) { return scale(d[0], 'color'); } : this.color;
 
         var line = d3.svg.line()
-                         .x(function (d) { return scale(d, "x") })
-                         .y(function (d) { return scale(d, "y") })
-                         .interpolate("basis")
+            .x(function (d) { return scale(d, "x") })
+            .y(function (d) { return scale(d, "y") })
+            .interpolate("linear");
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
