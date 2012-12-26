@@ -190,8 +190,8 @@
         this.graphic  = graphic;
         this.mappings = {};
         this.statistic = null;
+        this.positioner = null;
         /* Not used yet
-           this.positioner = null;
            this.data       = null;
         */
     }
@@ -210,6 +210,7 @@
         geometry.layer = layer;
         spec.mapping !== undefined && (layer.mappings = spec.mapping);
         layer.statistic = Statistics.fromSpec(spec.statistic || { kind: 'identity' });
+        layer.positioner = Positioners.fromSpec(spec.positioner || { kind: 'identity' });
         return layer;
     };
 
@@ -254,6 +255,7 @@
     Layer.prototype.prepare = function (data) {
         this.newData = this.statistic.compute(data, this.mappings);
         this.newData = _.values(groupData(this.newData, this.mappings.group));
+        this.newData = this.positioner.position(this.newData, this.mappings);
         this.trainScales(this.newData);
     };
 
@@ -261,27 +263,34 @@
         this.geometry.render(g, this.newData);
     };
 
+    Layer.prototype.sample = function(data) {
+        return data.length ? data[0][0] : null;
+    };
+
     Layer.prototype.dataValue = function (datum, aesthetic) {
+        // Keep a list of aesthetics possibly added by stats or positioners.
+        var specialAesthetics = { 'y0': 0 };
+        if (aesthetic in specialAesthetics) {
+            return _.isUndefined(datum[aesthetic]) ? specialAesthetics[aesthetic] : datum[aesthetic];
+        }
         return datum[this.mappings[aesthetic]];
     };
 
     Layer.prototype.dataMin = function (data, aesthetic) {
-        if (this.mappings[aesthetic]) {
-            var e = this;
-            function key (d) { return e.dataValue(d, aesthetic); }
-            function min (d) { return _.min(d, key); }
-            return key(min(_.map(data, min)))
+        if ((aesthetic == 'y' || aesthetic == 'x') && this.mappings[aesthetic]) {
+            return this.positioner.dataRange(data, this, aesthetic)[0];
+        } else if (this.mappings[aesthetic]) {
+            return IdentityPositioner.prototype.dataRange(data, this, aesthetic)[0];
         } else {
             return this.statistic.dataRange(data)[0];
         }
     };
 
     Layer.prototype.dataMax = function (data, aesthetic) {
-        if (this.mappings[aesthetic]) {
-            var e = this;
-            function key (d) { return e.dataValue(d, aesthetic); }
-            function max (d) { return _.max(d, key); }
-            return key(max(_.map(data, max)))
+        if ((aesthetic == 'y' || aesthetic == 'x') && this.mappings[aesthetic]) {
+            return this.positioner.dataRange(data, this, aesthetic)[1];
+        } else if (this.mappings[aesthetic]) {
+            return IdentityPositioner.prototype.dataRange(data, this, aesthetic)[1];
         } else {
             return this.statistic.dataRange(data)[1];
         }
@@ -340,7 +349,7 @@
 
         var area = d3.svg.area()
             .x(function (d) { return scale(d, "x", "x") })
-            .y1(function(d) { return scale(d, "y1", "y") })
+            .y1(function(d) { return scale(d, "y", "y") })
             .y0(function (d) { return scale(d, "y0", "y") })
             .interpolate("basis");
 
@@ -365,14 +374,20 @@
 
     LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
+
+        function scale (d, key, aesthetics) { 
+            _.isArray(aesthetics) || (aesthetics = [aesthetics]);
+            var sum = _.reduce(aesthetics, function(total, aesthetic) { return total + layer.dataValue(d, aesthetic); }, 0);
+            return layer.scaleExtracted(sum, key, d);
+        }
+
         var color = ('color' in layer.mappings) ?
-            function(d) { return scale(d[0], 'color'); } : this.color;
+            function(d) { return scale(d[0], 'color', 'color'); } : this.color;
 
         var line = d3.svg.line()
-                         .x(function (d) { return scale(d, "x") })
-                         .y(function (d) { return scale(d, "y") })
-                         .interpolate("basis")
+            .x(function (d) { return layer.scaledValue(d, 'x'); })
+            .y(function (d) { return scale(d, 'y', ['y', 'y0']); }) 
+            .interpolate("basis");
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
@@ -587,7 +602,6 @@
 
     Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
         var extreme;
-
         if (this.min === undefined) {
             this.min = layer.graphic.dataMin(data, aesthetic);
         }
@@ -802,13 +816,55 @@
         });
     };
 
+    ////////////////////////////////////////////////////////////////////////
+    // Positioners
+
+    var Positioners = {
+        identity: IdentityPositioner,
+        stack: StackPositioner
+    };
+
+    Positioners.fromSpec = function (spec) { return new this[spec.kind](spec); };
+
+    function IdentityPositioner (spec) {}
+
+    IdentityPositioner.prototype.position = function (data) { return data; };
+
+    IdentityPositioner.prototype.dataRange = function (data, layer, aesthetic) {
+        function key (d) { return layer.dataValue(d, aesthetic); }
+        return d3.extent(_.flatten(data), key);
+    }
+
+    function StackPositioner (spec) {
+        var stack = this.positioner = d3.layout.stack();
+        spec.offset !== 'undefined' && (stack.offset(spec.offset));
+        spec.order  !== 'undefined' && (stack.order(spec.order));
+    }
+
+    StackPositioner.prototype.position = function (data, mappings) {
+        this.positioner.x(function (d) { return d[mappings.x]; });
+        this.positioner.y(function (d) { return d[mappings.y]; });
+        return this.positioner(data);
+    }
+
+    StackPositioner.prototype.dataRange = function (data, layer, aesthetic) {
+        var baseline = aesthetic + '0';
+        function key (d) { return layer.dataValue(d, aesthetic) + (d[baseline] ? d[baseline] : 0); }
+        if (layer.sample(data)[baseline]) {
+            return d3.extent(_.last(data), key);
+        } else {
+            return d3.extent(_.flatten(data), key);
+        }
+    }
+
+
     /***
       * Returns a grouping of data based on a data set's attribute.
       * If groupBy is not defined returns the data nested as a single group.
       */
     function groupData(data, groupBy) {
         // By default group the entire set together
-        if (_.isUndefined(groupBy) || _.isNull(groupBy)) return [data];
+        if (groupBy == null) return [data];
         return _.groupBy(data, groupBy);
     }
 

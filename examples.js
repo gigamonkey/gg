@@ -8,7 +8,7 @@
         // Define graphics ...
 
         var scatterplot = gg({
-            layers: [{ geometry: 'point', mapping: { x: 'd', y: 'r' } }]
+            layers: [{ geometry: 'point', mapping: { x: 'd', y: 'r' },  }]
         });
 
         var symmetric = gg({
@@ -22,8 +22,8 @@
 
         var linechart = gg({
             layers: [
-                { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
-                { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' },  show: "hover" }
+                { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'}, positioner: { kind: 'stack' } },
+                { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' }, show: "hover" }
             ],
             scales: [
                 { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
@@ -128,7 +128,7 @@
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); };
 
-        //symmetric.render(w, h, ex(), data.toBeCentered);
+        symmetric.render(w, h, ex(), data.toBeCentered);
         linechart.renderer(w, h, ex())(data.upwardSubjects);
         combined.renderer(w, h, ex())(data.upward);
         barchart.renderer(w, h, ex())(data.upward);
@@ -138,6 +138,6 @@
         heightHistogram.renderer(w, h, ex())(data.heightWeight);
         twoPopulations.renderer(w, h, ex())(data.twoPopulations);
         boxplot.renderer(w, h, ex())(data.forBoxPlots);
-        area.renderer(w, h, ex())(data.upwardSubjects);
+        //area.renderer(w, h, ex())(data.upwardSubjects);
     });
 })();
