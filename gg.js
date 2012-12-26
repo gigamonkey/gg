@@ -837,8 +837,8 @@
 
     function StackPositioner (spec) {
         var stack = this.positioner = d3.layout.stack();
-        spec.offset !== 'undefined' && (stack.offset(spec.offset));
-        spec.order  !== 'undefined' && (stack.order(spec.order));
+        spec.offset !== undefined && (stack.offset(spec.offset));
+        spec.order  !== undefined && (stack.order(spec.order));
     }
 
     StackPositioner.prototype.position = function (data, mappings) {
