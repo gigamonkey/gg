@@ -387,7 +387,7 @@
         var line = d3.svg.line()
             .x(function (d) { return layer.scaledValue(d, 'x'); })
             .y(function (d) { return scale(d, 'y', ['y', 'y0']); }) 
-            .interpolate("basis");
+            .interpolate("linear");
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
