@@ -269,11 +269,13 @@
 
     Layer.prototype.dataValue = function (datum, aesthetic) {
         // Keep a list of aesthetics possibly added by stats or positioners.
-        var specialAesthetics = { 'y0': 0 };
-        if (aesthetic in specialAesthetics) {
-            return _.isUndefined(datum[aesthetic]) ? specialAesthetics[aesthetic] : datum[aesthetic];
+        var mappings = _.extend({}, this.mappings, this.positioner.mappings);
+        var value = datum[mappings[aesthetic]];
+        if (_.isUndefined(value) && (aesthetic in this.positioner.mappings)) {
+            return this.positioner.mappingDefaults[aesthetic];
+        } else {
+            return value;
         }
-        return datum[this.mappings[aesthetic]];
     };
 
     Layer.prototype.dataMin = function (data, aesthetic) {
@@ -826,7 +828,12 @@
 
     Positioners.fromSpec = function (spec) { return new this[spec.kind](spec); };
 
-    function IdentityPositioner (spec) {}
+    function IdentityPositioner (spec) {
+        // Not really sure where to put these. Some geoms need to check
+        // for a y0 to draw correctly (line, area) even when not stacked.
+        this.mappings = { 'y0': 'y0' };
+        this.mappingDefaults = { 'y0': 0 };
+    }
 
     IdentityPositioner.prototype.position = function (data) { return data; };
 
@@ -836,6 +843,7 @@
     }
 
     function StackPositioner (spec) {
+        IdentityPositioner.apply(this, arguments);
         var stack = this.positioner = d3.layout.stack();
         spec.offset !== undefined && (stack.offset(spec.offset));
         spec.order  !== undefined && (stack.order(spec.order));
@@ -848,12 +856,15 @@
     }
 
     StackPositioner.prototype.dataRange = function (data, layer, aesthetic) {
-        var baseline = aesthetic + '0';
-        function key (d) { return layer.dataValue(d, aesthetic) + (d[baseline] ? d[baseline] : 0); }
-        if (layer.sample(data)[baseline]) {
-            return d3.extent(_.last(data), key);
+        if (aesthetic === 'y') {
+            // For now support only stacking Y
+            return d3.extent(_.last(data), function (d) {
+                return layer.dataValue(d, 'y') + layer.dataValue(d, 'y0'); 
+            });
         } else {
-            return d3.extent(_.flatten(data), key);
+            return d3.extent(_.flatten(data), function (d) {
+                return layer.dataValue(d, aesthetic); 
+            });
         }
     }
 
