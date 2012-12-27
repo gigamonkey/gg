@@ -20,15 +20,19 @@
             ]
         });
 
-        var linechart = gg({
+        var linechartSpec = {
             layers: [
-                { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'}, positioner: { kind: 'stack' } },
+                { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
                 { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' }, show: "hover" }
             ],
             scales: [
                 { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
             ]
-        });
+        };
+
+        var linechart = gg(linechartSpec);
+        linechartSpec.layers[0].positioner = { kind: 'stack' };
+        var stackedLinechart = gg(linechartSpec);
 
         var barchart = gg({
             layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, color: 'blue', width: 2 }]
@@ -130,6 +134,7 @@
 
         //symmetric.render(w, h, ex(), data.toBeCentered);
         linechart.renderer(w, h, ex())(data.upwardSubjects);
+        stackedLinechart.renderer(w, h, ex())(data.upwardSubjects);
         combined.renderer(w, h, ex())(data.upward);
         barchart.renderer(w, h, ex())(data.upward);
         quadrants.renderer(w, h, ex())(data.quadrants);

@@ -268,31 +268,24 @@
     };
 
     Layer.prototype.dataValue = function (datum, aesthetic) {
-        // Keep a list of aesthetics possibly added by stats or positioners.
-        var mappings = _.extend({}, this.mappings, this.positioner.mappings);
-        var value = datum[mappings[aesthetic]];
-        if (_.isUndefined(value) && (aesthetic in this.positioner.mappings)) {
-            return this.positioner.mappingDefaults[aesthetic];
-        } else {
-            return value;
-        }
+        return this.positioner.dataValue(this, datum, aesthetic);
     };
 
     Layer.prototype.dataMin = function (data, aesthetic) {
-        if ((aesthetic == 'y' || aesthetic == 'x') && this.mappings[aesthetic]) {
-            return this.positioner.dataRange(data, this, aesthetic)[0];
+        if (aesthetic === 'y' && this.mappings[aesthetic]) {
+            return this.positioner.dataRange(this, data, aesthetic)[0];
         } else if (this.mappings[aesthetic]) {
-            return IdentityPositioner.prototype.dataRange(data, this, aesthetic)[0];
+            return IdentityPositioner.prototype.dataRange(this, data, aesthetic)[0];
         } else {
             return this.statistic.dataRange(data)[0];
         }
     };
 
     Layer.prototype.dataMax = function (data, aesthetic) {
-        if ((aesthetic == 'y' || aesthetic == 'x') && this.mappings[aesthetic]) {
-            return this.positioner.dataRange(data, this, aesthetic)[1];
+        if (aesthetic === 'y' && this.mappings[aesthetic]) {
+            return this.positioner.dataRange(this, data, aesthetic)[1];
         } else if (this.mappings[aesthetic]) {
-            return IdentityPositioner.prototype.dataRange(data, this, aesthetic)[1];
+            return IdentityPositioner.prototype.dataRange(this, data, aesthetic)[1];
         } else {
             return this.statistic.dataRange(data)[1];
         }
@@ -377,18 +370,12 @@
     LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
 
-        function scale (d, key, aesthetics) { 
-            _.isArray(aesthetics) || (aesthetics = [aesthetics]);
-            var sum = _.reduce(aesthetics, function(total, aesthetic) { return total + layer.dataValue(d, aesthetic); }, 0);
-            return layer.scaleExtracted(sum, key, d);
-        }
-
         var color = ('color' in layer.mappings) ?
-            function(d) { return scale(d[0], 'color', 'color'); } : this.color;
+            function(d) { return layer.scaledValue(d[0], 'color') } : this.color;
 
         var line = d3.svg.line()
             .x(function (d) { return layer.scaledValue(d, 'x'); })
-            .y(function (d) { return scale(d, 'y', ['y', 'y0']); }) 
+            .y(function (d) { return layer.scaledValue(d, 'y'); })
             .interpolate("linear");
 
         groups(g, 'lines', data).selectAll('polyline')
@@ -837,10 +824,20 @@
 
     IdentityPositioner.prototype.position = function (data) { return data; };
 
-    IdentityPositioner.prototype.dataRange = function (data, layer, aesthetic) {
+    IdentityPositioner.prototype.dataRange = function (layer, data, aesthetic) {
         function key (d) { return layer.dataValue(d, aesthetic); }
         return d3.extent(_.flatten(data), key);
-    }
+    };
+
+    IdentityPositioner.prototype.dataValue = function (layer, datum, aesthetic) {
+        var mappings = _.extend({}, layer.mappings, this.mappings);
+        var value = datum[mappings[aesthetic]];
+        if (_.isUndefined(value) && (aesthetic in this.mappings)) {
+            return this.mappingDefaults[aesthetic];
+        } else {
+            return value;
+        }
+    };
 
     function StackPositioner (spec) {
         IdentityPositioner.apply(this, arguments);
@@ -853,20 +850,30 @@
         this.positioner.x(function (d) { return d[mappings.x]; });
         this.positioner.y(function (d) { return d[mappings.y]; });
         return this.positioner(data);
-    }
+    };
 
-    StackPositioner.prototype.dataRange = function (data, layer, aesthetic) {
+    StackPositioner.prototype.dataRange = function (layer, data, aesthetic) {
         if (aesthetic === 'y') {
-            // For now support only stacking Y
+            // For now support only stacking Y.
+            // This is a neat little cheat, which assumes the data comes pre-
+            // grouped, thus the last group will have the largest y value.
             return d3.extent(_.last(data), function (d) {
-                return layer.dataValue(d, 'y') + layer.dataValue(d, 'y0'); 
+                return layer.dataValue(d, 'y');
             });
         } else {
             return d3.extent(_.flatten(data), function (d) {
                 return layer.dataValue(d, aesthetic); 
             });
         }
-    }
+    };
+
+    StackPositioner.prototype.dataValue = function (layer, datum, aesthetic) {
+        var value = IdentityPositioner.prototype.dataValue.call(this, layer, datum, aesthetic);
+        if (aesthetic === 'y') {
+            value += this.dataValue(layer, datum, 'y0');
+        }
+        return value;
+    };
 
 
     /***
