@@ -329,40 +329,49 @@
     };
 
     function AreaGeometry (spec) {
-        this.color  = spec.color  || 'black';
-        this.width  = spec.width  || 2;
+        this.width  = spec.width  || 1;
         this.fill   = spec.fill   || "black";
         this.alpha  = spec.alpha  || 1;
         this.stroke = spec.stroke || this.fill;
+        this.baseline = spec.baseline || 0;
+        this.interpolate = spec.interpolate || 'basis';
     }
 
     AreaGeometry.prototype =  new Geometry();
 
     AreaGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[layer.mappings[key]], aesthetic, d); }
+        function scale (d, key, aesthetic) { 
+            return layer.scaleExtracted(layer.dataValue(d, key), aesthetic, d); 
+        }
+
+        var fill = ('fill' in layer.mappings) ?
+            function(d) { return layer.scaledValue(d[0], 'fill') } : this.fill;
 
         var area = d3.svg.area()
-            .x(function (d) { return scale(d, "x", "x") })
-            .y1(function(d) { return scale(d, "y", "y") })
-            .y0(function (d) { return scale(d, "y0", "y") })
-            .interpolate("basis");
+            .x(function (d) { return layer.scaledValue(d, 'x'); }) 
+            .y1(function(d) { return layer.scaledValue(d, 'y'); }) 
+            .y0(function (d) { return scale(d, 'y0', 'y'); })
+            .interpolate(this.interpolate);
+
+        g.attr('class', 'area');
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
             .enter()
             .append("svg:path")
             .attr("d", area)
+            .attr('fill', fill)
+            .attr('fill-opacity', this.alpha)
             .attr('stroke-width', this.width)
             .attr('stroke', this.stroke)
-            .attr('fill', this.fill)
-            .attr('fill-opacity', this.alpha)
             .attr('stroke-opacity', this.alpha);
     };
 
     function LineGeometry (spec) {
         this.color = spec.color || 'black';
         this.width = spec.width || 2;
+        this.interpolate = spec.interpolate || 'basis';
     }
 
     LineGeometry.prototype = new Geometry();
@@ -376,7 +385,7 @@
         var line = d3.svg.line()
             .x(function (d) { return layer.scaledValue(d, 'x'); })
             .y(function (d) { return layer.scaledValue(d, 'y'); })
-            .interpolate("linear");
+            .interpolate(this.interpolate);
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })

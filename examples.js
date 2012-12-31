@@ -115,15 +115,24 @@
 
         var area = gg({
             layers: [
-                { geometry: 'area', mapping: { x: 'd', y: 'r', y0: 'r', y1: 'r', group: 'subject', color: 'subject'} }
+                { geometry: 'area', mapping: { x: 'd', y: 'r', group: 'subject', fill: 'subject'}, alpha: 0.6 }
             ],
             scales: [
-                { aesthetic: 'y0', type: 'linear' },
-                { aesthetic: 'y1', type: 'linear' }
-
+                { aesthetic: 'fill', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
             ]
         });
 
+        var stackedArea = gg({
+            layers: [
+                { geometry: 'area', mapping: { x: 'd', y: 'r', group: 'subject', fill: 'subject'}, alpha: 0.8, width: 0, positioner: { kind: 'stack' } },
+                { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'}, positioner: { kind: 'stack' }, interpolate: 'basis' } 
+            ],
+            scales: [
+                { aesthetic: 'y', type: 'linear', min: 0 },
+                { aesthetic: 'fill', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] },
+                { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
+            ]
+        });
 
         // ... and render 'em
 
@@ -131,10 +140,11 @@
         var w    = 300;
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); };
+        var cloneData = function (dset) { return _.map(dset, function (point) { return _.clone(point); }) };
 
         //symmetric.render(w, h, ex(), data.toBeCentered);
         linechart.renderer(w, h, ex())(data.upwardSubjects);
-        stackedLinechart.renderer(w, h, ex())(data.upwardSubjects);
+        stackedLinechart.renderer(w, h, ex())(cloneData(data.upwardSubjects));
         combined.renderer(w, h, ex())(data.upward);
         barchart.renderer(w, h, ex())(data.upward);
         quadrants.renderer(w, h, ex())(data.quadrants);
@@ -143,6 +153,7 @@
         heightHistogram.renderer(w, h, ex())(data.heightWeight);
         twoPopulations.renderer(w, h, ex())(data.twoPopulations);
         boxplot.renderer(w, h, ex())(data.forBoxPlots);
-        //area.renderer(w, h, ex())(data.upwardSubjects);
+        area.renderer(w, h, ex())(data.upwardSubjects);
+        stackedArea.renderer(w, h, ex())(cloneData(data.upwardSubjects));
     });
 })();
