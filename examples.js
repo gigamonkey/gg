@@ -124,13 +124,11 @@
 
         var stackedArea = gg({
             layers: [
-                { geometry: 'area', mapping: { x: 'd', y: 'r', group: 'subject', fill: 'subject'}, alpha: 0.8, width: 0, positioner: { kind: 'stack' } },
-                { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'}, positioner: { kind: 'stack' }, interpolate: 'basis' } 
+                { geometry: 'area', mapping: { x: 'd', y: 'r', group: 'subject', fill: 'subject'}, alpha: 0.8, width: 0, positioner: { kind: 'stack' } }
             ],
             scales: [
                 { aesthetic: 'y', type: 'linear', min: 0 },
-                { aesthetic: 'fill', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] },
-                { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
+                { aesthetic: 'fill', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
             ]
         });
 
