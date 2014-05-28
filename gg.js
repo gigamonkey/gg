@@ -6,7 +6,7 @@
     // Provide Node compatibility
     if (!_ && !d3 && typeof require !== 'undefined') {
         d3 = require('d3');
-        _ = require('underscore');
+        _  = require('underscore');
     }
 
     function Graphic (opts) {
@@ -69,7 +69,7 @@
     Graphic.prototype.render = function (width, height, where, data) {
         // Render the graphic using the given data into the given HTML
         // element (a div or span usually).
-        this.width = width;
+        this.width  = width;
         this.height = height;
 
         this.svg = where.append('svg')
@@ -186,9 +186,9 @@
     // Layers
 
     function Layer (geometry, graphic) {
-        this.geometry = geometry;
-        this.graphic  = graphic;
-        this.mappings = {};
+        this.geometry  = geometry;
+        this.graphic   = graphic;
+        this.mappings  = {};
         this.statistic = null;
         /* Not used yet
            this.positioner = null;
@@ -291,17 +291,17 @@
         return this.mappings[aesthetic] || this.statistic.variable;
     };
 
+    Layer.prototype.attributeValue = function (aesthetic, defaultValue) {
+        return (aesthetic in this.mappings) ?
+            function (d) { return this.scaledValue(d, aesthetic); } : defaultValue;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // Geometry objects are the ones that actually draw stuff onto the
     // Graphic. They only care about scaled values which they can get
     // from their layer.
 
     function Geometry () {}
-
-    function attributeValue (layer, aesthetic, defaultValue) {
-        return (aesthetic in layer.mappings) ?
-            function (d) { return layer.scaledValue(d, aesthetic); } : defaultValue;
-    }
 
     function PointGeometry (spec) {
         this.size  = spec.size || 5;
@@ -320,8 +320,8 @@
             .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
             .attr('fill-opacity', this.alpha)
-            .attr('fill', attributeValue(layer, 'color', this.color))
-            .attr('r', attributeValue(layer, 'size', this.size));
+            .attr('fill', layer.attributeValue('color', this.color))
+            .attr('r', layer.attributeValue('size', this.size));
     };
 
     function AreaGeometry (spec) {
@@ -405,7 +405,7 @@
             .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)
             .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); })
-            .attr('fill', attributeValue(layer, 'color', this.color));
+            .attr('fill', layer.attributeValue('color', this.color));
     };
 
     function BoxPlotGeometry (spec) {
@@ -424,90 +424,73 @@
             return layer.scaleExtracted(v, aesthetic);
         }
 
+        function iqrBox(s) {
+            s.append('rect')
+                .attr('class', 'boxplot iqr')
+                .attr('x', function (d) { return scale(d.group, 'x') - width/2; })
+                .attr('y', function (d) { return scale(d.q3, 'y'); })
+                .attr('width', width)
+                .attr('height', function (d) { return scale(d.q1, 'y') - scale(d.q3, 'y'); })
+                .attr('fill', 'none');
+            s.call(medianLine);
+        }
+
+        function medianLine(s) {
+            s.append('line')
+                .attr('class', 'boxplot median')
+                .attr('x1', function (d) { return scale(d.group, 'x') - width/2; })
+                .attr('x2', function (d) { return scale(d.group, 'x') + width/2; })
+                .attr('y1', function (d) { return scale(d.median, 'y'); })
+                .attr('y2', function (d) { return scale(d.median, 'y'); });
+        }
+
+        function whisker(s, y1, y2) {
+            s.append('line')
+                .attr('class', 'boxplot whisker')
+                .attr('x1', function (d) { return scale(d.group, 'x'); })
+                .attr('x2', function (d) { return scale(d.group, 'x'); })
+                .attr('y1', function (d) { return scale(d[y1], 'y'); })
+                .attr('y2', function (d) { return scale(d[y2], 'y'); });
+            s.call(whiskerTick, y2);
+        }
+
+        function whiskerTick(s, y) {
+            s.append('line')
+                .attr('class', 'boxplot whisker')
+                .attr('x1', function (d) { return scale(d.group, 'x') - (width * 0.4); })
+                .attr('x2', function (d) { return scale(d.group, 'x') + (width * 0.4); })
+                .attr('y1', function (d) { return scale(d[y], 'y'); })
+                .attr('y2', function (d) { return scale(d[y], 'y'); });
+        }
+
+        function outliers(s) {
+            s.selectAll('circle')
+                .data(function (d) { return _.map(d.outliers, function (o) { return { x: scale(d.group, 'x'), y: scale(o, 'y') }; }); })
+                .enter()
+                .append('circle')
+                .attr('class', 'boxplot outlier')
+                .attr('cx', function (o) { return o.x; })
+                .attr('cy', function (o) { return o.y; })
+                .attr('r', 2);
+        }
+
+        function render(s) {
+            s.call(iqrBox).call(whisker, 'q3', 'upper').call(whisker, 'q1', 'lower').call(outliers);
+        }
+
         var color = ('color' in layer.mappings) ?
             function(d) { return scale(d, 'color'); } : this.color;
 
-        var boxes = groups(g, 'boxes', data).selectAll('g').data(Object).enter();
-
-        // IQR box
-        boxes.append('rect')
-            .attr('class', 'boxplot iqr')
-            .attr('x', function (d) { return scale(d.group, 'x') - width/2; })
-            .attr('y', function (d) { return scale(d.q3, 'y'); })
-            .attr('width', width)
-            .attr('height', function (d) { return scale(d.q1, 'y') - scale(d.q3, 'y'); })
-            .attr('fill', 'none')
-            .attr('stroke', color)
-            .attr('stroke-width', 1);
-
-        // median line
-        boxes.append('line')
-            .attr('class', 'boxplot median')
-            .attr('x1', function (d) { return scale(d.group, 'x') - width/2; })
-            .attr('x2', function (d) { return scale(d.group, 'x') + width/2; })
-            .attr('y1', function (d) { return scale(d.median, 'y'); })
-            .attr('y2', function (d) { return scale(d.median, 'y'); })
-            .attr('stroke', color)
-            .attr('stroke-width', 1);
-
-        // upper whisker
-        boxes.append('line')
-            .attr('class', 'boxplot whisker')
-            .attr('x1', function (d) { return scale(d.group, 'x'); })
-            .attr('x2', function (d) { return scale(d.group, 'x'); })
-            .attr('y1', function (d) { return scale(d.q3, 'y'); })
-            .attr('y2', function (d) { return scale(d.upper, 'y'); })
-            .attr('stroke', color)
-            .attr('stroke-width', 1);
-
-
-        // upper whisker tick
-        boxes.append('line')
-            .attr('class', 'boxplot whisker')
-            .attr('x1', function (d) { return scale(d.group, 'x') - (width * 0.4); })
-            .attr('x2', function (d) { return scale(d.group, 'x') + (width * 0.4); })
-            .attr('y1', function (d) { return scale(d.upper, 'y'); })
-            .attr('y2', function (d) { return scale(d.upper, 'y'); })
-            .attr('stroke', color)
-            .attr('stroke-width', 1);
-
-
-        // lower whisker
-        boxes.append('line')
-            .attr('class', 'boxplot whisker-tick')
-            .attr('x1', function (d) { return scale(d.group, 'x'); })
-            .attr('x2', function (d) { return scale(d.group, 'x'); })
-            .attr('y1', function (d) { return scale(d.q1, 'y'); })
-            .attr('y2', function (d) { return scale(d.lower, 'y'); })
-            .attr('stroke', color)
-            .attr('stroke-width', 1);
-
-
-        // lower whisker tick
-        boxes.append('line')
-            .attr('class', 'boxplot whisker-tick')
-            .attr('x1', function (d) { return scale(d.group, 'x') - (width * 0.4); })
-            .attr('x2', function (d) { return scale(d.group, 'x') + (width * 0.4); })
-            .attr('y1', function (d) { return scale(d.lower, 'y'); })
-            .attr('y2', function (d) { return scale(d.lower, 'y'); })
-            .attr('stroke', color)
-            .attr('stroke-width', 1);
-
-        // outliers
-        var outliers = [];
-        _.each(data, function (d) {
-            _.each(d.outliers, function (o) {
-                outliers.push({ group: d.group, value: o });
-            });
-        });
-
-        var o = g.selectAll('circle.outliers').data(outliers).enter();
-        o.append('circle')
-            .attr('class', 'boxplot outliers')
-            .attr('cx', function (d) { return scale(d.group, 'x'); })
-            .attr('cy', function (d) { return scale(d.value, 'y'); })
-            .attr('r', 2)
-            .attr('fill', color);
+        g.selectAll('g.boxes')
+            .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'boxes')
+            .selectAll('g')
+            .data(Object)
+            .enter()
+            .append('g')
+            .call(render);
     };
 
     function TextGeometry (spec) {
