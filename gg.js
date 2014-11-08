@@ -725,6 +725,7 @@
 
     function BoxPlotStatistic (spec) {
         this.group = spec.group || false;
+        this.groupOrdering = spec.groupOrdering || function (g) { return g; }
         this.variable = spec.variable || 'value';
     }
 
@@ -753,8 +754,11 @@
         // }
 
         var groups = splitByGroups(data, this.group, this.variable);
+        var ordering = this.groupOrdering;
 
-        return _.map(groups, function (values, name) {
+        return _.map(_.sortBy(_.pairs(groups), function (p) { return ordering(p[0]); }), function (g) {
+            var name   = g[0];
+            var values = g[1];
             values.sort(d3.ascending);
 
             var q1              = d3.quantile(values, 0.25);
