@@ -293,7 +293,7 @@
 
     Layer.prototype.attributeValue = function (aesthetic, defaultValue) {
         return (aesthetic in this.mappings) ?
-            function (d) { return this.scaledValue(d, aesthetic); } : defaultValue;
+            _.bind(function (d) { return this.scaledValue(d, aesthetic); }, this) : defaultValue;
     }
 
     ////////////////////////////////////////////////////////////////////////
