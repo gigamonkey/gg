@@ -13,22 +13,26 @@
 
         var symmetric = gg({
             layers: [
-                { geometry: 'line', mapping: { x: 'd', y: 'r' } },
+                { geometry: 'line', mapping: { x: 'd', y: 'r' } }
             ],
             scales: [
                 { type: 'linear', aesthetic: 'y', center: 0 }
             ]
         });
 
-        var linechart = gg({
+        var linechartSpec = {
             layers: [
                 { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
-                { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' },  show: "hover" }
+                { geometry: 'text', mapping: { x: 'd', y: 'r', text: '{d}, {r}' }, show: "hover" }
             ],
             scales: [
                 { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
             ]
-        });
+        };
+
+        var linechart = gg(linechartSpec);
+        linechartSpec.layers[0].positioner = { kind: 'stack' };
+        var stackedLinechart = gg(linechartSpec);
 
         var barchart = gg({
             layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, color: 'blue', width: 2 }]
@@ -109,15 +113,36 @@
             scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
         });
 
+        var area = gg({
+            layers: [
+                { geometry: 'area', mapping: { x: 'd', y: 'r', group: 'subject', fill: 'subject'}, alpha: 0.6 }
+            ],
+            scales: [
+                { aesthetic: 'fill', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
+            ]
+        });
+
+        var stackedArea = gg({
+            layers: [
+                { geometry: 'area', mapping: { x: 'd', y: 'r', group: 'subject', fill: 'subject'}, alpha: 0.8, width: 0, positioner: { kind: 'stack' } }
+            ],
+            scales: [
+                { aesthetic: 'y', type: 'linear', min: 0 },
+                { aesthetic: 'fill', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
+            ]
+        });
+
         // ... and render 'em
 
         var data = gg.sampleData;
         var w    = 300;
         var h    = 200;
         var ex   = function () { return d3.select('#examples').append('span'); };
+        var cloneData = function (dset) { return _.map(dset, function (point) { return _.clone(point); }) };
 
         //symmetric.render(w, h, ex(), data.toBeCentered);
         linechart.renderer(w, h, ex())(data.upwardSubjects);
+        stackedLinechart.renderer(w, h, ex())(cloneData(data.upwardSubjects));
         combined.renderer(w, h, ex())(data.upward);
         barchart.renderer(w, h, ex())(data.upward);
         quadrants.renderer(w, h, ex())(data.quadrants);
@@ -126,5 +151,7 @@
         heightHistogram.renderer(w, h, ex())(data.heightWeight);
         twoPopulations.renderer(w, h, ex())(data.twoPopulations);
         boxplot.renderer(w, h, ex())(data.forBoxPlots);
+        area.renderer(w, h, ex())(data.upwardSubjects);
+        stackedArea.renderer(w, h, ex())(cloneData(data.upwardSubjects));
     });
 })();

@@ -190,8 +190,8 @@
         this.graphic   = graphic;
         this.mappings  = {};
         this.statistic = null;
+        this.positioner = null;
         /* Not used yet
-           this.positioner = null;
            this.data       = null;
         */
     }
@@ -210,6 +210,7 @@
         geometry.layer = layer;
         spec.mapping !== undefined && (layer.mappings = spec.mapping);
         layer.statistic = Statistics.fromSpec(spec.statistic || { kind: 'identity' });
+        layer.positioner = Positioners.fromSpec(spec.positioner || { kind: 'identity' });
         return layer;
     };
 
@@ -254,6 +255,7 @@
     Layer.prototype.prepare = function (data) {
         this.newData = this.statistic.compute(data, this.mappings);
         this.newData = _.values(groupData(this.newData, this.mappings.group));
+        this.newData = this.positioner.position(this.newData, this.mappings);
         this.trainScales(this.newData);
     };
 
@@ -261,27 +263,29 @@
         this.geometry.render(g, this.newData);
     };
 
+    Layer.prototype.sample = function(data) {
+        return data.length ? data[0][0] : null;
+    };
+
     Layer.prototype.dataValue = function (datum, aesthetic) {
-        return datum[this.mappings[aesthetic]];
+        return this.positioner.dataValue(this, datum, aesthetic);
     };
 
     Layer.prototype.dataMin = function (data, aesthetic) {
-        if (this.mappings[aesthetic]) {
-            var e = this;
-            function key (d) { return e.dataValue(d, aesthetic); }
-            function min (d) { return _.min(d, key); }
-            return key(min(_.map(data, min)))
+        if (aesthetic === 'y' && this.mappings[aesthetic]) {
+            return this.positioner.dataRange(this, data, aesthetic)[0];
+        } else if (this.mappings[aesthetic]) {
+            return IdentityPositioner.prototype.dataRange(this, data, aesthetic)[0];
         } else {
             return this.statistic.dataRange(data)[0];
         }
     };
 
     Layer.prototype.dataMax = function (data, aesthetic) {
-        if (this.mappings[aesthetic]) {
-            var e = this;
-            function key (d) { return e.dataValue(d, aesthetic); }
-            function max (d) { return _.max(d, key); }
-            return key(max(_.map(data, max)))
+        if (aesthetic === 'y' && this.mappings[aesthetic]) {
+            return this.positioner.dataRange(this, data, aesthetic)[1];
+        } else if (this.mappings[aesthetic]) {
+            return IdentityPositioner.prototype.dataRange(this, data, aesthetic)[1];
         } else {
             return this.statistic.dataRange(data)[1];
         }
@@ -325,54 +329,63 @@
     };
 
     function AreaGeometry (spec) {
-        this.color  = spec.color  || 'black';
-        this.width  = spec.width  || 2;
+        this.width  = spec.width  || 1;
         this.fill   = spec.fill   || "black";
         this.alpha  = spec.alpha  || 1;
         this.stroke = spec.stroke || this.fill;
+        this.baseline = spec.baseline || 0;
+        this.interpolate = spec.interpolate || 'basis';
     }
 
     AreaGeometry.prototype =  new Geometry();
 
     AreaGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[key], aesthetic, d); }
+        function scale (d, key, aesthetic) { 
+            return layer.scaleExtracted(layer.dataValue(d, key), aesthetic, d); 
+        }
+
+        var fill = ('fill' in layer.mappings) ?
+            function(d) { return layer.scaledValue(d[0], 'fill') } : this.fill;
 
         var area = d3.svg.area()
-                         .x(function (d) { return scale(d, "x", "x") })
-                         .y1(function(d) { return scale(d, "y1", "y") })
-                         .y0(function (d) { return scale(d, "y0", "y") })
-                         .interpolate("basis")
+            .x(function (d) { return layer.scaledValue(d, 'x'); }) 
+            .y1(function(d) { return layer.scaledValue(d, 'y'); }) 
+            .y0(function (d) { return scale(d, 'y0', 'y'); })
+            .interpolate(this.interpolate);
+
+        g.attr('class', 'area');
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
             .enter()
             .append("svg:path")
             .attr("d", area)
+            .attr('fill', fill)
+            .attr('fill-opacity', this.alpha)
             .attr('stroke-width', this.width)
             .attr('stroke', this.stroke)
-            .attr('fill', this.fill)
-            .attr('fill-opacity', this.alpha)
-            .attr('stroke-opacity', this.alpha)
+            .attr('stroke-opacity', this.alpha);
     };
 
     function LineGeometry (spec) {
         this.color = spec.color || 'black';
         this.width = spec.width || 2;
+        this.interpolate = spec.interpolate || 'basis';
     }
 
     LineGeometry.prototype = new Geometry();
 
     LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
+
         var color = ('color' in layer.mappings) ?
-            function(d) { return scale(d[0], 'color'); } : this.color;
+            function(d) { return layer.scaledValue(d[0], 'color') } : this.color;
 
         var line = d3.svg.line()
-            .x(function (d) { return scale(d, "x") })
-            .y(function (d) { return scale(d, "y") })
-            .interpolate("linear");
+            .x(function (d) { return layer.scaledValue(d, 'x'); })
+            .y(function (d) { return layer.scaledValue(d, 'y'); })
+            .interpolate(this.interpolate);
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
@@ -570,7 +583,6 @@
 
     Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
         var extreme;
-
         if (this.min === undefined) {
             this.min = layer.graphic.dataMin(data, aesthetic);
         }
@@ -789,13 +801,84 @@
         });
     };
 
+    ////////////////////////////////////////////////////////////////////////
+    // Positioners
+
+    var Positioners = {
+        identity: IdentityPositioner,
+        stack: StackPositioner
+    };
+
+    Positioners.fromSpec = function (spec) { return new this[spec.kind](spec); };
+
+    function IdentityPositioner (spec) {
+        // Not really sure where to put these. Some geoms need to check
+        // for a y0 to draw correctly (line, area) even when not stacked.
+        this.mappings = { 'y0': 'y0' };
+        this.mappingDefaults = { 'y0': 0 };
+    }
+
+    IdentityPositioner.prototype.position = function (data) { return data; };
+
+    IdentityPositioner.prototype.dataRange = function (layer, data, aesthetic) {
+        function key (d) { return layer.dataValue(d, aesthetic); }
+        return d3.extent(_.flatten(data), key);
+    };
+
+    IdentityPositioner.prototype.dataValue = function (layer, datum, aesthetic) {
+        var mappings = _.extend({}, layer.mappings, this.mappings);
+        var value = datum[mappings[aesthetic]];
+        if (_.isUndefined(value) && (aesthetic in this.mappings)) {
+            return this.mappingDefaults[aesthetic];
+        } else {
+            return value;
+        }
+    };
+
+    function StackPositioner (spec) {
+        IdentityPositioner.apply(this, arguments);
+        var stack = this.positioner = d3.layout.stack();
+        spec.offset !== undefined && (stack.offset(spec.offset));
+        spec.order  !== undefined && (stack.order(spec.order));
+    }
+
+    StackPositioner.prototype.position = function (data, mappings) {
+        this.positioner.x(function (d) { return d[mappings.x]; });
+        this.positioner.y(function (d) { return d[mappings.y]; });
+        return this.positioner(data);
+    };
+
+    StackPositioner.prototype.dataRange = function (layer, data, aesthetic) {
+        if (aesthetic === 'y') {
+            // For now support only stacking Y.
+            // This is a neat little cheat, which assumes the data comes pre-
+            // grouped, thus the last group will have the largest y value.
+            return d3.extent(_.last(data), function (d) {
+                return layer.dataValue(d, 'y');
+            });
+        } else {
+            return d3.extent(_.flatten(data), function (d) {
+                return layer.dataValue(d, aesthetic); 
+            });
+        }
+    };
+
+    StackPositioner.prototype.dataValue = function (layer, datum, aesthetic) {
+        var value = IdentityPositioner.prototype.dataValue.call(this, layer, datum, aesthetic);
+        if (aesthetic === 'y') {
+            value += this.dataValue(layer, datum, 'y0');
+        }
+        return value;
+    };
+
+
     /***
       * Returns a grouping of data based on a data set's attribute.
       * If groupBy is not defined returns the data nested as a single group.
       */
     function groupData(data, groupBy) {
         // By default group the entire set together
-        if (_.isUndefined(groupBy) || _.isNull(groupBy)) return [data];
+        if (groupBy == null) return [data];
         return _.groupBy(data, groupBy);
     }
 
