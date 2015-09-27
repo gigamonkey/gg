@@ -359,6 +359,7 @@
     function LineGeometry (spec) {
         this.color = spec.color || 'black';
         this.width = spec.width || 2;
+        this.smooth = spec.smooth || false;
     }
 
     LineGeometry.prototype = new Geometry();
@@ -372,7 +373,7 @@
         var line = d3.svg.line()
             .x(function (d) { return scale(d, "x") })
             .y(function (d) { return scale(d, "y") })
-            .interpolate("linear");
+            .interpolate(this.smooth ? 'basis' : 'linear');
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
@@ -587,7 +588,7 @@
     };
 
     Scale.prototype.domain = function (interval) {
-        this.d3Scale = this.d3Scale.domain(interval);
+        this.d3Scale = this.d3Scale.domain(interval).nice();
     };
 
     Scale.prototype.range = function (interval) {
