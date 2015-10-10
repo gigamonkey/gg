@@ -11,7 +11,7 @@ h1 {
 
 rect.base { fill: rgba(221, 204, 187, 1); }
 
-/*
+
 rect.boxplot {
     fill: none;
     stroke: #000;
@@ -22,7 +22,6 @@ line.boxplot {
     stroke: #000;
     stroke-width: 1px;
 }
-*/
 
 div#examples span { margin: 3px; }
 
