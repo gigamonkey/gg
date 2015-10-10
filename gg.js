@@ -9,6 +9,8 @@
         _  = require('underscore');
     }
 
+    function id (x) { return x; }
+
     function Graphic (opts) {
         this.layers = [];
         this.scales = {};
@@ -203,6 +205,7 @@
             area:     AreaGeometry,
             interval: IntervalGeometry,
             box:      BoxPlotGeometry,
+            arrow:    ArrowGeometry,
             text:     TextGeometry
         }[spec.geometry || 'point'](spec);
 
@@ -327,7 +330,7 @@
     function AreaGeometry (spec) {
         this.color  = spec.color  || 'black';
         this.width  = spec.width  || 2;
-        this.fill   = spec.fill   || "black";
+        this.fill   = spec.fill   || 'black';
         this.alpha  = spec.alpha  || 1;
         this.stroke = spec.stroke || this.fill;
     }
@@ -339,16 +342,16 @@
         function scale (d, key, aesthetic) { return layer.scaleExtracted(d[key], aesthetic, d); }
 
         var area = d3.svg.area()
-                         .x(function (d) { return scale(d, "x", "x") })
-                         .y1(function(d) { return scale(d, "y1", "y") })
-                         .y0(function (d) { return scale(d, "y0", "y") })
-                         .interpolate("basis")
+                         .x(function (d) { return scale(d, 'x', 'x') })
+                         .y1(function(d) { return scale(d, 'y1', 'y') })
+                         .y0(function (d) { return scale(d, 'y0', 'y') })
+                         .interpolate('basis')
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
             .enter()
-            .append("svg:path")
-            .attr("d", area)
+            .append('svg:path')
+            .attr('d', area)
             .attr('stroke-width', this.width)
             .attr('stroke', this.stroke)
             .attr('fill', this.fill)
@@ -371,15 +374,16 @@
             function(d) { return scale(d[0], 'color'); } : this.color;
 
         var line = d3.svg.line()
-            .x(function (d) { return scale(d, "x") })
-            .y(function (d) { return scale(d, "y") })
+            .x(function (d) { return scale(d, 'x') })
+            .y(function (d) { return scale(d, 'y') })
             .interpolate(this.smooth ? 'basis' : 'linear');
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
             .enter()
-            .append("svg:path")
-            .attr("d", line)
+            .append('svg:path')
+            .attr('class', 'line')
+            .attr('d', line)
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
             .attr('stroke', color);
@@ -492,6 +496,85 @@
             .enter()
             .append('g')
             .call(render);
+    };
+
+    function ArrowGeometry (spec) {
+        this.arrowLength = spec.arrow.length || 10;
+        this.arrowWidth  = spec.arrow.width || 3;
+        this.color = spec.color || 'black';
+    }
+
+    ArrowGeometry.prototype = new Geometry();
+
+    ArrowGeometry.prototype.render = function (g, data) {
+        var layer = this.layer;
+        var len = this.arrowLength;
+        var width = this.arrowWidth;
+        var color = this.color;
+        var linewidth = this.width;
+
+        function scale (v, aesthetic) {
+            return layer.scaleExtracted(v, aesthetic);
+        }
+
+        function arrowline (s) {
+            s.append('line')
+                .attr('x1', function (d) { return scale(d.tail.x, 'x'); })
+                .attr('x2', function (d) { return scale(d.head.x, 'x'); })
+                .attr('y1', function (d) { return scale(d.tail.y, 'y'); })
+                .attr('y2', function (d) { return scale(d.head.y, 'y'); })
+                .attr('fill', 'none')
+                .attr('stroke-width', linewidth)
+                .attr('stroke', color);
+        }
+
+        function arrowhead (s) {
+
+            function arrowheadPoints (d, length, width) {
+                var x1 = scale(d.tail.x, 'x');
+                var y1 = scale(d.tail.y, 'y');
+                var x2 = scale(d.head.x, 'x');
+                var y2 = scale(d.head.y, 'y');
+
+                var rise = y2 - y1;
+                var run  = x2 - x1;
+
+                var len = Math.sqrt((rise * rise) + (run * run));
+
+                var cross_x = x2 - (length * (run / len));
+                var cross_y = y2 - (length * (rise / len));
+
+                return [
+                    { x: x2, y: y2 }, // the point of the arrow.
+                    { x: cross_x + width * rise/len, y: cross_y - width * run/len },
+                    { x: cross_x - width * rise/len, y: cross_y + width * run/len }
+                ];
+            }
+
+            var line = d3.svg.line()
+                .x(function (d) { return d.x })
+                .y(function (d) { return d.y })
+                .interpolate('linear');
+
+            s.append('svg:path')
+                .attr('class', 'arrow')
+                .attr('d', function (d) { return line(arrowheadPoints(d, len, width)) + 'Z'; })
+                .attr('fill', color)
+                .attr('stroke-width', linewidth)
+                .attr('stroke', color);
+        }
+
+        function render (s) {
+            s.call(arrowline).call(arrowhead);
+        }
+
+        g.selectAll('g.arrows')
+            .data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'arrows')
+            .call(render);
+
     };
 
     function TextGeometry (spec) {
@@ -671,6 +754,7 @@
         identity: IdentityStatistic,
         bin:      BinStatistic,
         box:      BoxPlotStatistic,
+        arrow:    ArrowStatistic,
         sum:      SumStatistic
     };
 
@@ -726,7 +810,7 @@
 
     function BoxPlotStatistic (spec) {
         this.group = spec.group || false;
-        this.groupOrdering = spec.groupOrdering || function (g) { return g; }
+        this.groupOrdering = spec.groupOrdering || id;
         this.variable = spec.variable || 'value';
     }
 
@@ -788,6 +872,23 @@
             };
             return r;
         });
+    };
+
+    function ArrowStatistic (spec) {
+        // A function that returns the data point (in data space) the
+        // arrow should point at.
+        this.head = spec.head;
+
+        // A function that returns the data point (in data space) the
+        // arrow should point from.
+        this.tail = spec.tail;
+    }
+
+    ArrowStatistic.prototype.compute = function (data) {
+        return {
+            head: this.head(data),
+            tail: this.tail(data)
+        };
     };
 
     /***
