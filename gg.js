@@ -255,7 +255,7 @@
     };
 
     Layer.prototype.prepare = function (data) {
-        this.newData = this.statistic.compute(data, this.mappings);
+        this.newData = this.statistic.compute(data);
         this.newData = _.values(groupData(this.newData, this.mappings.group));
         this.trainScales(this.newData);
     };
