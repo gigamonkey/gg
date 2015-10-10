@@ -892,9 +892,9 @@
     };
 
     /***
-      * Returns a grouping of data based on a data set's attribute.
-      * If groupBy is not defined returns the data nested as a single group.
-      */
+     * Returns a grouping of data based on a data set's attribute.
+     * If groupBy is not defined returns the data nested as a single group.
+     */
     function groupData(data, groupBy) {
         // By default group the entire set together
         if (_.isUndefined(groupBy) || _.isNull(groupBy)) return [data];
