@@ -39,7 +39,7 @@
     };
 
     Graphic.prototype.ensureScales = function () {
-        var aesthetics = _.union(_.flatten(_.invoke(this.layers, 'aesthetics')));
+        var aesthetics = _.union(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
         _.each(aesthetics, function (aesthetic) {
             if (! this.scales[aesthetic]) {
                 this.scales[aesthetic] = Scale.defaultFor(aesthetic);
@@ -82,9 +82,7 @@
     };
 
     Graphic.prototype.renderer = function (width, height, where) {
-        return _.bind(function (data) {
-            this.render(width, height, where, data);
-        }, this);
+        return _.bind(function (data) { this.render(width, height, where, data); }, this);
     };
 
 
@@ -186,7 +184,7 @@
 
     ////////////////////////////////////////////////////////////////////////
     // Layers -- each layer is responsible for drawing one geometry
-    // into the graphic to which the layer belongs. The layer is
+    // into the graphic to which the layer belongs. The layer is also
     // responsible for mapping data from the keys in the original data
     // to aesthetics. It uses the graphics to get at the scales for
     // the different aesthetics.
@@ -678,8 +676,6 @@
     };
 
     Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
-        var extreme;
-
         if (this.min === undefined) {
             this.min = layer.graphic.dataMin(data, aesthetic);
         }
@@ -688,7 +684,7 @@
         }
         this.domainSet = true;
         if (this.center !== undefined) {
-            extreme = Math.max(this.max - this.center, Math.abs(this.min - this.center))
+            var extreme = Math.max(this.max - this.center, Math.abs(this.min - this.center))
             this.domain([this.center - extreme, this.center + extreme]);
         } else {
             this.domain([this.min, this.max]);
@@ -721,9 +717,6 @@
 
     function CategoricalScale () {
         this.d3Scale = d3.scale.ordinal();
-        // Setting padding to 1 seems to be required to get bars to
-        // line up with axis ticks. Needs more investigation.
-        this.padding = 1;
     }
 
     CategoricalScale.prototype = new Scale();
@@ -741,7 +734,9 @@
     };
 
     CategoricalScale.prototype.range = function (interval) {
-        this.d3Scale = this.d3Scale.rangeBands(interval, this.padding);
+        // Setting padding to 1 seems to be required to get bars to
+        // line up with axis ticks. Needs more investigation.
+        this.d3Scale = this.d3Scale.rangeRoundBands(interval, 1);
     };
 
     function ColorScale() {

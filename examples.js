@@ -29,7 +29,12 @@
     });
 
     var barchart = gg({
-        layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, color: 'blue', width: 2 }]
+        layers: [
+            { geometry: 'interval', mapping: { x: 'd', y: 'r' }, color: 'blue', width: 2 }
+        ],
+        scales: [
+            { type: 'linear', aesthetic: 'y', min: 0 }
+        ]
     });
 
     var histogram = gg({
@@ -117,7 +122,7 @@
     //symmetric.render(w, h, ex(), data.toBeCentered);
     linechart.renderer(w, h, ex())(data.upwardSubjects);
     combined.renderer(w, h, ex())(data.upward);
-    barchart.renderer(w, h, ex())(data.upward);
+    barchart.renderer(w, h, ex())(_.map(data.upward, function (d) { return { d: d.d, r: Math.max(d.r, 0) }; }));
     quadrants.renderer(w, h, ex())(data.quadrants);
     histogram.renderer(w, h, ex())(data.purchases);
     semilog.renderer(w, h, ex())(data.semiLogData);
