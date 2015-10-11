@@ -222,7 +222,7 @@
      * the appropriate scale for the aesthetic.
      */
     Layer.prototype.scaledValue = function (d, aesthetic) {
-        return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic, d);
+        return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic);
     };
 
     /**
@@ -273,6 +273,10 @@
         this.geometry.render(g, this.newData);
     };
 
+    /**
+     * Extract the field from the datum corresponding to the given
+     * aesthetic.
+     */
     Layer.prototype.dataValue = function (datum, aesthetic) {
         return datum[this.mappings[aesthetic]];
     };
@@ -348,7 +352,7 @@
 
     AreaGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[key], aesthetic, d); }
+        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[key], aesthetic); }
 
         var area = d3.svg.area()
                          .x(function (d) { return scale(d, 'x', 'x') })
