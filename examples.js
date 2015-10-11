@@ -112,8 +112,12 @@
         scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
     });
 
+    var areachartSmooth = gg({
+        layers: [ { geometry: 'area', mapping: { x: 'a', y: false, y0: 'top', y1: 'bottom' }, smooth: true } ]
+    });
+
     var areachart = gg({
-        layers: [ { geometry: 'area', mapping: { x: 'x', y: 'y0' } } ]
+        layers: [ { geometry: 'area', mapping: { x: 'a', y: false, y0: 'top', y1: 'bottom' } } ]
     });
 
     // ... and render 'em
@@ -133,6 +137,7 @@
     twoPopulations.renderer(w, h, ex())(data.twoPopulations);
     boxplot.renderer(w, h, ex())(data.forBoxPlots);
     symmetric.render(w, h, ex(), data.toBeCentered);
+    areachartSmooth.renderer(w, h, ex())(data.upwardPairs);
     areachart.renderer(w, h, ex())(data.upwardPairs);
 
 })();

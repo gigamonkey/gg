@@ -22,7 +22,7 @@
             x += Math.random() * 30;
             y0 += 20 - Math.random() * 30;
             y1 = y0 + Math.random() * 10;
-            return { x: x, y0: y0, y1: y1 };
+            return { a: x, top: y0, bottom: y1 };
         });
     }());
 

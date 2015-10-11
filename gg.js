@@ -248,16 +248,16 @@
      * 'foo', extract the 'foo' field from d) and then scales it using
      * the appropriate scale for the aesthetic.
      */
-    Layer.prototype.aestheticValue = function (d, aesthetic, mapTo) {
-        return this.scale(this.dataValue(d, mapTo || aesthetic), aesthetic);
+    Layer.prototype.aestheticValue = function (d, aesthetic, mapKey) {
+        return this.scale(this.dataValue(d, mapKey || aesthetic), aesthetic);
     };
 
     /**
      * Extract the field from the datum corresponding to the given
      * aesthetic.
      */
-    Layer.prototype.dataValue = function (datum, aesthetic) {
-        return datum[this.mappings[aesthetic]];
+    Layer.prototype.dataValue = function (datum, mapKey) {
+        return datum[this.mappings[mapKey]];
     };
 
     Layer.prototype.dataValues = function (datum, aesthetic) {
@@ -266,7 +266,7 @@
         // just the single value returned by mapping the aesthetic to
         // the field in the data. For the BoxStatistic, however, it's
         // all the fields except for whatever the x aesthetic maps to.
-        return this.statistic.valuesForAesthetic(datum, aesthetic, this.mappings[aesthetic]);
+        return this.geometry.valuesForAesthetic(datum, aesthetic, this.mappings[aesthetic], this);
     };
 
 
@@ -334,6 +334,10 @@
 
     function Geometry () {}
 
+    Geometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
+        return [ datum[mapped] ];
+    }
+
     function PointGeometry (spec) {
         this.size  = spec.size || 5;
         this.alpha = spec.alpha || 1;
@@ -361,19 +365,25 @@
         this.fill   = spec.fill   || 'black';
         this.alpha  = spec.alpha  || 1;
         this.stroke = spec.stroke || this.fill;
+        this.smooth = spec.smooth || false;
     }
 
     AreaGeometry.prototype =  new Geometry();
 
+    AreaGeometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped, layer) {
+        return mapped
+            ? [ datum[mapped] ]
+            : _.map(['y0', 'y1'], function (x) { return layer.dataValue(datum, x); })
+    }
+
     AreaGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, key, aesthetic) { return layer.scale(d[key], aesthetic); }
 
         var area = d3.svg.area()
-                         .x(function (d) { return scale(d, 'x', 'x') })
-                         .y1(function (d) { return scale(d, 'y1', 'y') })
-                         .y0(function (d) { return scale(d, 'y0', 'y') })
-                         .interpolate('basis')
+            .x(function (d) { return layer.aestheticValue(d, 'x') })
+            .y1(function (d) { return layer.aestheticValue(d, 'y', 'y1') })
+            .y0(function (d) { return layer.aestheticValue(d, 'y', 'y0') })
+            .interpolate(this.smooth ? 'basis' : 'linear');
 
         groups(g, 'lines', data).selectAll('polyline')
             .data(function(d) { return [d]; })
@@ -464,6 +474,12 @@
     }
 
     BoxPlotGeometry.prototype = new Geometry();
+
+    BoxPlotGeometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
+        return mapped
+            ? [ datum[mapped] ]
+            : _.values(_.omit(datum, ['group', 'outliers'])).concat(datum.outliers);
+    }
 
     BoxPlotGeometry.prototype.render = function (g, data) {
         // Data points are { group, median, q1, q3, upper, lower, outliers }
@@ -784,10 +800,6 @@
 
     function Statistic () {}
 
-    Statistic.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
-        return [ datum[mapped] ];
-    }
-
     function IdentityStatistic () {}
 
     IdentityStatistic.prototype = new Statistic();
@@ -849,12 +861,6 @@
     }
 
     BoxPlotStatistic.prototype = new Statistic();
-
-    BoxPlotStatistic.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
-        return mapped
-            ? [ datum[mapped] ]
-            : _.values(_.omit(datum, ['group', 'outliers'])).concat(datum.outliers);
-    }
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
         var flattened = _.flatten(data);
