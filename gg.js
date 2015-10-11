@@ -519,10 +519,10 @@
     ArrowGeometry.prototype = new Geometry();
 
     ArrowGeometry.prototype.render = function (g, data) {
-        var layer = this.layer;
-        var len = this.arrowLength;
-        var width = this.arrowWidth;
-        var color = this.color;
+        var layer     = this.layer;
+        var len       = this.arrowLength;
+        var width     = this.arrowWidth;
+        var color     = this.color;
         var linewidth = this.width;
 
 
