@@ -214,7 +214,6 @@
         return layer;
     };
 
-
     /**
      * Given a datum and an aesthetic, extract the corresponding value
      * (e.g. if the aesthetic is 'x' and it's mapped to the field
@@ -250,10 +249,6 @@
             // domains. So really we should adjust the domain of the
             // scale to encompass all the data of all the layers that
             // use it.
-            if (aesthetic === 'text') {
-                s.prepare(this, newData, aesthetic);
-                return;
-            }
             if (! s.domainSet) {
                 s.defaultDomain(this, newData, aesthetic);
             }

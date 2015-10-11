@@ -3,3 +3,17 @@
 * Other pitfalls
 
 * Crazy ideas
+
+
+
+Different layers may map different fields in the original
+data to the same aesthetic. So we want to collect all the
+values of all the fields that are mapped to the given
+aesthetic and then choose the minimum of all of them.
+
+Raw data:
+ - Determine layers and how they map fields in the raw data to aesthetics.
+ - Now can determine the minimum and maximum values for each aesthetic.
+ -
+
+Group data
