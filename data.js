@@ -13,6 +13,20 @@
         });
     }());
 
+    // Random upward trending paired data
+    gg.sampleData.upwardPairs = (function () {
+        var x = 0;
+        var y0 = 0;
+        var y1 = 0;
+        return _.map(_.range(20), function () {
+            x += Math.random() * 30;
+            y0 += 20 - Math.random() * 30;
+            y1 = y0 + Math.random() * 10;
+            return { x: x, y0: y0, y1: y1 };
+        });
+    }());
+
+
     // Data above and below zero.
     gg.sampleData.toBeCentered = (function () {
         var x = 0;

@@ -112,6 +112,10 @@
         scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
     });
 
+    var areachart = gg({
+        layers: [ { geometry: 'area', mapping: { x: 'x', y: 'y0' } } ]
+    });
+
     // ... and render 'em
 
     var data = gg.sampleData;
@@ -119,7 +123,6 @@
     var h    = 200;
     var ex   = function () { return d3.select('#examples').append('span'); };
 
-    //symmetric.render(w, h, ex(), data.toBeCentered);
     linechart.renderer(w, h, ex())(data.upwardSubjects);
     combined.renderer(w, h, ex())(data.upward);
     barchart.renderer(w, h, ex())(_.map(data.upward, function (d) { return { d: d.d, r: Math.max(d.r, 0) }; }));
@@ -129,5 +132,7 @@
     heightHistogram.renderer(w, h, ex())(data.heightWeight);
     twoPopulations.renderer(w, h, ex())(data.twoPopulations);
     boxplot.renderer(w, h, ex())(data.forBoxPlots);
+    symmetric.render(w, h, ex(), data.toBeCentered);
+    areachart.renderer(w, h, ex())(data.upwardPairs);
 
 })();

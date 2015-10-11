@@ -31,7 +31,7 @@
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
             return [this.paddingX, this.width - this.paddingX];
-        } else if (aesthetic === 'y') {
+        } else if (aesthetic === 'y' || aesthetic === 'y0' || aesthetic === 'y1') {
             return [this.height - this.paddingY, this.paddingY];
         } else {
             throw 'Only 2d graphics supported. Unknown aesthetic: ' + aesthetic;
@@ -63,7 +63,7 @@
         return key(_.max(layers, key));
     };
 
-    Graphic.prototype.layersWithAesthetic = function(aesthetic){
+    Graphic.prototype.layersWithAesthetic = function (aesthetic) {
         function hasAesthetic (layer) { return (aesthetic in layer.mappings); }
         return _.filter(this.layers, hasAesthetic);
     };
@@ -222,14 +222,14 @@
      * the appropriate scale for the aesthetic.
      */
     Layer.prototype.scaledValue = function (d, aesthetic) {
-        return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic);
+        return this.scale(this.dataValue(d, aesthetic), aesthetic);
     };
 
     /**
      * Given a value in data space and an aesthetic, scale it using
      * the appropriate scale for the aesthetic.
      */
-    Layer.prototype.scaleExtracted = function (v, aesthetic) {
+    Layer.prototype.scale = function (v, aesthetic) {
         return this.graphic.scales[aesthetic].scale(v);
     };
 
@@ -352,11 +352,11 @@
 
     AreaGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
-        function scale (d, key, aesthetic) { return layer.scaleExtracted(d[key], aesthetic); }
+        function scale (d, key, aesthetic) { return layer.scale(d[key], aesthetic); }
 
         var area = d3.svg.area()
                          .x(function (d) { return scale(d, 'x', 'x') })
-                         .y1(function(d) { return scale(d, 'y1', 'y') })
+                         .y1(function (d) { return scale(d, 'y1', 'y') })
                          .y0(function (d) { return scale(d, 'y0', 'y') })
                          .interpolate('basis')
 
@@ -443,7 +443,7 @@
         var width = this.width;
 
         function scale (v, aesthetic) {
-            return layer.scaleExtracted(v, aesthetic);
+            return layer.scale(v, aesthetic);
         }
 
         function iqrBox(s) {
@@ -530,16 +530,13 @@
         var color = this.color;
         var linewidth = this.width;
 
-        function scale (v, aesthetic) {
-            return layer.scaleExtracted(v, aesthetic);
-        }
 
         function arrowline (s) {
             s.append('line')
-                .attr('x1', function (d) { return scale(d.tail.x, 'x'); })
-                .attr('x2', function (d) { return scale(d.head.x, 'x'); })
-                .attr('y1', function (d) { return scale(d.tail.y, 'y'); })
-                .attr('y2', function (d) { return scale(d.head.y, 'y'); })
+                .attr('x1', function (d) { return layer.scale(d.tail.x, 'x'); })
+                .attr('x2', function (d) { return layer.scale(d.head.x, 'x'); })
+                .attr('y1', function (d) { return layer.scale(d.tail.y, 'y'); })
+                .attr('y2', function (d) { return layer.scale(d.head.y, 'y'); })
                 .attr('fill', 'none')
                 .attr('stroke-width', linewidth)
                 .attr('stroke', color);
@@ -548,10 +545,10 @@
         function arrowhead (s) {
 
             function arrowheadPoints (d, length, width) {
-                var x1 = scale(d.tail.x, 'x');
-                var y1 = scale(d.tail.y, 'y');
-                var x2 = scale(d.head.x, 'x');
-                var y2 = scale(d.head.y, 'y');
+                var x1 = layer.scale(d.tail.x, 'x');
+                var y1 = layer.scale(d.tail.y, 'y');
+                var x2 = layer.scale(d.head.x, 'x');
+                var y2 = layer.scale(d.head.y, 'y');
 
                 var rise = y2 - y1;
                 var run  = x2 - x1;
