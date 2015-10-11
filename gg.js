@@ -393,6 +393,11 @@
         // into a single array to be used to draw a polyline.
         var color = ('color' in layer.mappings) ? function (d) { return scale(d[0], 'color'); } : this.color;
 
+        function classname (d) {
+            var g = layer.dataValue(d[0], 'group');
+            return g ? 'line ' + g : 'line';
+        }
+
         var line = d3.svg.line()
             .x(function (d) { return scale(d, 'x') })
             .y(function (d) { return scale(d, 'y') })
@@ -402,7 +407,7 @@
             .data(function(d) { return [d]; })
             .enter()
             .append('svg:path')
-            .attr('class', function (d) { return 'line ' + layer.dataValue(d[0], 'color'); })
+            .attr('class', classname)
             .attr('d', line)
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
