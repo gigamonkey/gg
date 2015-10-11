@@ -67,3 +67,14 @@ div#examples span { margin: 3px; }
   fill: black;
   text-shadow: 1px 1px 0px white;
 }
+
+
+
+/*
+// Explicit styling of lines in first line chart.
+
+path.line.a { stroke: #f00; }
+path.line.b { stroke: #0f0; }
+path.line.c { stroke: #00f; }
+path.line.d { stroke: #f0f; }
+*/

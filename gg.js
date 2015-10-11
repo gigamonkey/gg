@@ -225,6 +225,14 @@
     };
 
     /**
+     * Extract the field from the datum corresponding to the given
+     * aesthetic.
+     */
+    Layer.prototype.dataValue = function (datum, aesthetic) {
+        return datum[this.mappings[aesthetic]];
+    };
+
+    /**
      * Given a value in data space and an aesthetic, scale it using
      * the appropriate scale for the aesthetic.
      */
@@ -266,14 +274,6 @@
 
     Layer.prototype.render = function (g) {
         this.geometry.render(g, this.newData);
-    };
-
-    /**
-     * Extract the field from the datum corresponding to the given
-     * aesthetic.
-     */
-    Layer.prototype.dataValue = function (datum, aesthetic) {
-        return datum[this.mappings[aesthetic]];
     };
 
     Layer.prototype.dataMin = function (data, aesthetic) {
@@ -373,6 +373,14 @@
         this.smooth = spec.smooth || false;
     }
 
+
+    /**
+     * Line geometry draws one or more lines. Lines can be either
+     * smoothed or straight from point to point. If there are multiple
+     * lines, they can be colored differently with a color scale. The
+     * lines path element are also given a class corresponding to the
+     * name of the group so they can be styled with CSS.
+     */
     LineGeometry.prototype = new Geometry();
 
     LineGeometry.prototype.render = function (g, data) {
@@ -383,7 +391,7 @@
         // Can't use attributeValue here like the other geometries
         // because we always group the data and then turn each group
         // into a single array to be used to draw a polyline.
-        var color = ('color' in layer.mappings) ? function(d) { return scale(d[0], 'color'); } : this.color;
+        var color = ('color' in layer.mappings) ? function (d) { return scale(d[0], 'color'); } : this.color;
 
         var line = d3.svg.line()
             .x(function (d) { return scale(d, 'x') })
@@ -394,7 +402,7 @@
             .data(function(d) { return [d]; })
             .enter()
             .append('svg:path')
-            .attr('class', 'line')
+            .attr('class', function (d) { return 'line ' + layer.dataValue(d[0], 'color'); })
             .attr('d', line)
             .attr('fill', 'none')
             .attr('stroke-width', this.width)
