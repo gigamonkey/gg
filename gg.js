@@ -38,8 +38,15 @@
         }
     };
 
-    Graphic.prototype.ensureScales = function () {
+    Graphic.prototype.prepare = function (data) {
         var aesthetics = _.union(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
+        this.ensureScales(aesthetics);
+        this.prepareLayers(data);
+        this.trainScales(data, aesthetics);
+    };
+
+
+    Graphic.prototype.ensureScales = function (aesthetics) {
         _.each(aesthetics, function (aesthetic) {
             if (! this.scales[aesthetic]) {
                 this.scales[aesthetic] = Scale.defaultFor(aesthetic);
@@ -49,6 +56,28 @@
 
     Graphic.prototype.prepareLayers = function (data) {
         _.each(this.layers, function (e) { e.prepare(data); });
+    };
+
+    Graphic.prototype.trainScales = function (data, aesthetics) {
+        _.each(aesthetics, function (aesthetic) {
+            var s = this.scales[aesthetic];
+            if (!s.domainSet) {
+                s.defaultDomain(this.valuesForAesthetic(data, aesthetic))
+            }
+            if (aesthetic === 'x' || aesthetic === 'y') {
+                s.range(this.rangeFor(aesthetic));
+            }
+        }, this);
+    };
+
+    Graphic.prototype.valuesForAesthetic = function (data, aesthetic) {
+        var layers = this.layersWithAesthetic(aesthetic);
+        function vals (layer) {
+            function v (d) { return layer.dataValues(d, aesthetic); }
+            var computed = layer.statistic.compute(data);
+            return _.flatten(_.map(computed, v));
+        }
+        return _.uniq(_.flatten(_.map(layers, vals)));
     };
 
     Graphic.prototype.dataMin = function (data, aesthetic) {
@@ -139,8 +168,7 @@
             .attr('width', this.width)
             .attr('height', this.height);
 
-        this.graphic.ensureScales();
-        this.graphic.prepareLayers(data);
+        this.graphic.prepare(data);
 
         var xAxis = d3.svg.axis()
             .scale(this.graphic.scales['x'].d3Scale)
@@ -220,8 +248,8 @@
      * 'foo', extract the 'foo' field from d) and then scales it using
      * the appropriate scale for the aesthetic.
      */
-    Layer.prototype.scaledValue = function (d, aesthetic) {
-        return this.scale(this.dataValue(d, aesthetic), aesthetic);
+    Layer.prototype.aestheticValue = function (d, aesthetic, mapTo) {
+        return this.scale(this.dataValue(d, mapTo || aesthetic), aesthetic);
     };
 
     /**
@@ -231,6 +259,16 @@
     Layer.prototype.dataValue = function (datum, aesthetic) {
         return datum[this.mappings[aesthetic]];
     };
+
+    Layer.prototype.dataValues = function (datum, aesthetic) {
+        // Given a datum (produced by a Statistic), return a list of
+        // values for the given aesthetic. Most of the time this is
+        // just the single value returned by mapping the aesthetic to
+        // the field in the data. For the BoxStatistic, however, it's
+        // all the fields except for whatever the x aesthetic maps to.
+        return this.statistic.valuesForAesthetic(datum, aesthetic, this.mappings[aesthetic]);
+    };
+
 
     /**
      * Given a value in data space and an aesthetic, scale it using
@@ -249,27 +287,9 @@
         return _.without(_.keys(this.mappings), 'group');
     };
 
-    Layer.prototype.trainScales = function (newData) {
-        _.each(this.aesthetics(), function (aesthetic) {
-            var s = this.graphic.scales[aesthetic];
-            // This is not really right--if we have multiple layers
-            // rendering via the same scale, they might have different
-            // domains. So really we should adjust the domain of the
-            // scale to encompass all the data of all the layers that
-            // use it.
-            if (! s.domainSet) {
-                s.defaultDomain(this, newData, aesthetic);
-            }
-            if (aesthetic === 'x' || aesthetic === 'y') {
-                s.range(this.graphic.rangeFor(aesthetic));
-            }
-        }, this);
-    };
-
     Layer.prototype.prepare = function (data) {
         this.newData = this.statistic.compute(data);
         this.newData = _.values(groupData(this.newData, this.mappings.group));
-        this.trainScales(this.newData);
     };
 
     Layer.prototype.render = function (g) {
@@ -304,7 +324,7 @@
 
     Layer.prototype.attributeValue = function (aesthetic, defaultValue) {
         return (aesthetic in this.mappings) ?
-            _.bind(function (d) { return this.scaledValue(d, aesthetic); }, this) : defaultValue;
+            _.bind(function (d) { return this.aestheticValue(d, aesthetic); }, this) : defaultValue;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -328,8 +348,8 @@
             .data(Object)
             .enter()
             .append('circle')
-            .attr('cx', function (d) { return layer.scaledValue(d, 'x'); })
-            .attr('cy', function (d) { return layer.scaledValue(d, 'y'); })
+            .attr('cx', function (d) { return layer.aestheticValue(d, 'x'); })
+            .attr('cy', function (d) { return layer.aestheticValue(d, 'y'); })
             .attr('fill-opacity', this.alpha)
             .attr('fill', layer.attributeValue('color', this.color))
             .attr('r', layer.attributeValue('size', this.size));
@@ -386,7 +406,7 @@
     LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
 
-        function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
+        function scale (d, aesthetic) { return layer.aestheticValue(d, aesthetic); }
 
         // Can't use attributeValue here like the other geometries
         // because we always group the data and then turn each group
@@ -425,7 +445,7 @@
         var layer = this.layer;
         var width = this.width;
 
-        function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
+        function scale (d, aesthetic) { return layer.aestheticValue(d, aesthetic); }
 
         groups(g, 'rects', data).selectAll('rect')
             .data(Object)
@@ -450,17 +470,13 @@
         var layer = this.layer;
         var width = this.width;
 
-        function scale (v, aesthetic) {
-            return layer.scale(v, aesthetic);
-        }
-
         function iqrBox(s) {
             s.append('rect')
                 .attr('class', 'boxplot iqr')
-                .attr('x', function (d) { return scale(d.group, 'x') - width/2; })
-                .attr('y', function (d) { return scale(d.q3, 'y'); })
+                .attr('x', function (d) { return layer.scale(d.group, 'x') - width/2; })
+                .attr('y', function (d) { return layer.scale(d.q3, 'y'); })
                 .attr('width', width)
-                .attr('height', function (d) { return scale(d.q1, 'y') - scale(d.q3, 'y'); })
+                .attr('height', function (d) { return layer.scale(d.q1, 'y') - layer.scale(d.q3, 'y'); })
                 .attr('fill', 'none');
             s.call(medianLine);
         }
@@ -468,34 +484,34 @@
         function medianLine(s) {
             s.append('line')
                 .attr('class', 'boxplot median')
-                .attr('x1', function (d) { return scale(d.group, 'x') - width/2; })
-                .attr('x2', function (d) { return scale(d.group, 'x') + width/2; })
-                .attr('y1', function (d) { return scale(d.median, 'y'); })
-                .attr('y2', function (d) { return scale(d.median, 'y'); });
+                .attr('x1', function (d) { return layer.scale(d.group, 'x') - width/2; })
+                .attr('x2', function (d) { return layer.scale(d.group, 'x') + width/2; })
+                .attr('y1', function (d) { return layer.scale(d.median, 'y'); })
+                .attr('y2', function (d) { return layer.scale(d.median, 'y'); });
         }
 
         function whisker(s, y1, y2) {
             s.append('line')
                 .attr('class', 'boxplot whisker')
-                .attr('x1', function (d) { return scale(d.group, 'x'); })
-                .attr('x2', function (d) { return scale(d.group, 'x'); })
-                .attr('y1', function (d) { return scale(d[y1], 'y'); })
-                .attr('y2', function (d) { return scale(d[y2], 'y'); });
+                .attr('x1', function (d) { return layer.scale(d.group, 'x'); })
+                .attr('x2', function (d) { return layer.scale(d.group, 'x'); })
+                .attr('y1', function (d) { return layer.scale(d[y1], 'y'); })
+                .attr('y2', function (d) { return layer.scale(d[y2], 'y'); });
             s.call(whiskerTick, y2);
         }
 
         function whiskerTick(s, y) {
             s.append('line')
                 .attr('class', 'boxplot whisker')
-                .attr('x1', function (d) { return scale(d.group, 'x') - (width * 0.4); })
-                .attr('x2', function (d) { return scale(d.group, 'x') + (width * 0.4); })
-                .attr('y1', function (d) { return scale(d[y], 'y'); })
-                .attr('y2', function (d) { return scale(d[y], 'y'); });
+                .attr('x1', function (d) { return layer.scale(d.group, 'x') - (width * 0.4); })
+                .attr('x2', function (d) { return layer.scale(d.group, 'x') + (width * 0.4); })
+                .attr('y1', function (d) { return layer.scale(d[y], 'y'); })
+                .attr('y2', function (d) { return layer.scale(d[y], 'y'); });
         }
 
         function outliers(s) {
             s.selectAll('circle')
-                .data(function (d) { return _.map(d.outliers, function (o) { return { x: scale(d.group, 'x'), y: scale(o, 'y') }; }); })
+                .data(function (d) { return _.map(d.outliers, function (o) { return { x: layer.scale(d.group, 'x'), y: layer.scale(o, 'y') }; }); })
                 .enter()
                 .append('circle')
                 .attr('class', 'boxplot outlier')
@@ -509,7 +525,7 @@
         }
 
         var color = ('color' in layer.mappings) ?
-            function(d) { return scale(d, 'color'); } : this.color;
+            function(d) { return layer.scale(d, 'color'); } : this.color;
 
         g.selectAll('g.boxes')
             .data(data)
@@ -624,8 +640,8 @@
             .enter()
             .append('text')
             .attr('class', 'graphicText')
-            .attr('x', function (d) { return layer.scaledValue(d, 'x'); })
-            .attr('y', function (d) { return layer.scaledValue(d, 'y'); })
+            .attr('x', function (d) { return layer.aestheticValue(d, 'x'); })
+            .attr('y', function (d) { return layer.aestheticValue(d, 'y'); })
             .text(formatter);
 
         if ( this.show === 'hover' ){
@@ -684,21 +700,17 @@
         return s;
     };
 
-    Scale.prototype.defaultDomain = function (layer, data, aesthetic) {
-        if (this.min === undefined) {
-            this.min = layer.graphic.dataMin(data, aesthetic);
-        }
-        if (this.max === undefined) {
-            this.max = layer.graphic.dataMax(data, aesthetic);
-        }
+    Scale.prototype.defaultDomain = function (values) {
+        if (this.min === undefined) this.min = _.min(values)
+        if (this.max === undefined) this.max = _.max(values);
+        this.domain(this.center !== undefined ? centered(this.min, this.max, this.center) : [this.min, this.max])
         this.domainSet = true;
-        if (this.center !== undefined) {
-            var extreme = Math.max(this.max - this.center, Math.abs(this.min - this.center))
-            this.domain([this.center - extreme, this.center + extreme]);
-        } else {
-            this.domain([this.min, this.max]);
-        }
     };
+
+    function centered (min, max, center) {
+        var halfWidth = Math.max(max - center, Math.abs(min - center));
+        return [center - halfWidth, center + halfWidth];
+    }
 
     Scale.prototype.domain = function (interval) {
         this.d3Scale = this.d3Scale.domain(interval).nice();
@@ -735,9 +747,7 @@
         this.d3Scale.domain(values);
     };
 
-    CategoricalScale.prototype.defaultDomain = function (layer, data, aesthetic) {
-        function val (d) { return layer.dataValue(d, aesthetic); }
-        var values = _.uniq(_.map(_.flatten(data), val));
+    CategoricalScale.prototype.defaultDomain = function (values) {
         values.sort(function (a,b) { return a - b; });
         this.values(values);
     };
@@ -772,7 +782,15 @@
 
     Statistics.fromSpec = function (spec) { return new this[spec.kind](spec); };
 
+    function Statistic () {}
+
+    Statistic.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
+        return [ datum[mapped] ];
+    }
+
     function IdentityStatistic () {}
+
+    IdentityStatistic.prototype = new Statistic();
 
     IdentityStatistic.prototype.compute = function (data) { return data; };
 
@@ -780,6 +798,8 @@
         this.variable = spec.variable;
         this.bins     = spec.bins || 20;
     }
+
+    BinStatistic.prototype = new Statistic();
 
     BinStatistic.prototype.compute = function (data) {
         var values = _.pluck(data, this.variable);
@@ -804,6 +824,8 @@
         this.variable = spec.variable;
     }
 
+    SumStatistic.prototype = new Statistic();
+
     SumStatistic.prototype.compute = function (data) {
         var groups = groupData(data, this.group),
             value = _.bind(function(point) {
@@ -824,6 +846,14 @@
         this.group = spec.group || false;
         this.groupOrdering = spec.groupOrdering || id;
         this.variable = spec.variable || 'value';
+    }
+
+    BoxPlotStatistic.prototype = new Statistic();
+
+    BoxPlotStatistic.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
+        return mapped
+            ? [ datum[mapped] ]
+            : _.values(_.omit(datum, ['group', 'outliers'])).concat(datum.outliers);
     }
 
     BoxPlotStatistic.prototype.dataRange = function (data) {
@@ -895,6 +925,8 @@
         // arrow should point from.
         this.tail = spec.tail;
     }
+
+    ArrowStatistic.prototype = new Statistic();
 
     ArrowStatistic.prototype.compute = function (data) {
         return {
