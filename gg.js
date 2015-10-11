@@ -229,12 +229,10 @@
 
     /**
      * Given a value in data space and an aesthetic, scale it using
-     * the appropriate scale for the aesthetic. The only reason we
-     * need the original datum, d, is because the scale method on
-     * TextScale needs it. I'm not crazy about that.
+     * the appropriate scale for the aesthetic.
      */
-    Layer.prototype.scaleExtracted = function (v, aesthetic, d) {
-        return this.graphic.scales[aesthetic].scale(v, d);
+    Layer.prototype.scaleExtracted = function (v, aesthetic) {
+        return this.graphic.scales[aesthetic].scale(v);
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
@@ -595,6 +593,7 @@
     };
 
     function TextGeometry (spec) {
+        this.text = spec.text
         this.show = spec.show;
     }
 
@@ -602,6 +601,16 @@
 
     TextGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
+        var text = this.text;
+
+        function formatter (d) {
+            function fmt (_, key) {
+                var v = d[key];
+                return String(typeof v === 'number' ? v.toFixed(2) : v);
+            }
+            return text.replace(/{(.*?)}/g, fmt);
+        }
+
         var area = g.append('g');
         var text = groups(area, 'texts', data).selectAll('circle')
             .data(Object)
@@ -610,7 +619,7 @@
             .attr('class', 'graphicText')
             .attr('x', function (d) { return layer.scaledValue(d, 'x'); })
             .attr('y', function (d) { return layer.scaledValue(d, 'y'); })
-            .text(function(d) { return layer.scaledValue(d, 'text'); });
+            .text(formatter);
 
         if ( this.show === 'hover' ){
             text.attr('class', 'graphicText showOnHover');
@@ -663,7 +672,6 @@
             color: ColorScale,
             fill:  ColorScale,
             size:  LinearScale,
-            text:  TextScale
         }[aesthetic]();
         s.aesthetic = aesthetic;
         return s;
@@ -746,27 +754,6 @@
         this.d3Scale = this.d3Scale.range(interval);
     };
 
-    // FIXME: I'm not sure TextScale should even exist. I kind of see
-    // the analog to ColorScale. But it seems more like maybe we just
-    // put the responsibility for turning the datum into text in the
-    // TextGeometry.
-    function TextScale(){ }
-
-    TextScale.prototype = new Scale();
-
-    TextScale.prototype.prepare = function (layer, newData, aesthetic) {
-        this.pattern = layer.mappings[aesthetic];
-        this.data = newData;
-    };
-
-    TextScale.prototype.scale = function (v, data) {
-        function format (match, key) {
-            var it = data[key];
-            if ( typeof it === 'number' ) it = it.toFixed(2);
-            return String(it);
-        }
-        return this.pattern.replace(/{(.*?)}/g, format);
-    };
 
     ////////////////////////////////////////////////////////////////////////
     // Statistics
