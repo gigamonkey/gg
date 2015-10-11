@@ -12,8 +12,38 @@ values of all the fields that are mapped to the given
 aesthetic and then choose the minimum of all of them.
 
 Raw data:
- - Determine layers and how they map fields in the raw data to aesthetics.
- - Now can determine the minimum and maximum values for each aesthetic.
+
+ - Determine layers and how they map fields in the raw data to
+   aesthetics.
+
+ - Now can determine the minimum and maximum values for each
+   aesthetic.
+
  -
 
-Group data
+Group data:
+
+ - A layer may render the data by grouping (e.g. to draw multiple
+   lines for different data sets.)
+
+ - A faceting layer may group the data and then render each group in a
+   separate facet which may have its own layers which may further
+   group the data.
+
+
+
+
+Facet knows what Scales it needs based on what Scales the Geometries
+that are going to render on the facet use. It can set the domain on
+the scales based on the Data it is going to render if it knows the
+mappings from the raw data to the scales, possibly after being
+transformed my some Statistic. E.g. if we're plotting box plots, we
+have raw data with 'value' and 'group' fields which we then run
+through BoxPlotStatistic to produce a box plot stat for each group.
+Then we map the various fields in the stat object to either the x or y
+aesthetic and use the minimum and maximum values across all fields in
+all groups to set the domain. The other aesthetic will be set by the
+group field.
+
+
+Geometries should be fed scaled data.
