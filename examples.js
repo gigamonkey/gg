@@ -21,7 +21,7 @@
     var linechart = gg({
         layers: [
             { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
-            { geometry: 'text', mapping: { x: 'd', y: 'r', }, text: '{d}, {r}', show: "hover" }
+            { geometry: 'text', mapping: { x: 'd', y: 'r', }, text: '{d}, {r}', show: 'hover' }
         ],
         scales: [
             { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
@@ -102,7 +102,7 @@
                 geometry: 'point',
                 mapping: { x: 'x', y: 'y', size: 'size' }
             },
-            { geometry: 'text', mapping: { x: 'x', y: 'y' }, text: '{name}: {size}',  show: "hover" }
+            { geometry: 'text', mapping: { x: 'x', y: 'y' }, text: '{name}: {size}',  show: 'hover' }
         ],
         scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
     });
