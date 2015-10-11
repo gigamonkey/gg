@@ -185,17 +185,17 @@
     };
 
     ////////////////////////////////////////////////////////////////////////
-    // Layers
+    // Layers -- each layer is responsible for drawing one geometry
+    // into the graphic to which the layer belongs. The layer is
+    // responsible for mapping data from the keys in the original data
+    // to aesthetics. It uses the graphics to get at the scales for
+    // the different aesthetics.
 
     function Layer (geometry, graphic) {
         this.geometry  = geometry;
         this.graphic   = graphic;
         this.mappings  = {};
         this.statistic = null;
-        /* Not used yet
-           this.positioner = null;
-           this.data       = null;
-        */
     }
 
     Layer.fromSpec = function (spec, graphic) {
@@ -216,12 +216,25 @@
         return layer;
     };
 
-    Layer.prototype.scaleExtracted = function (v, aesthetic, d) {
-        return this.graphic.scales[aesthetic].scale(v, d);
-    };
 
+    /**
+     * Given a datum and an aesthetic, extract the corresponding value
+     * (e.g. if the aesthetic is 'x' and it's mapped to the field
+     * 'foo', extract the 'foo' field from d) and then scales it using
+     * the appropriate scale for the aesthetic.
+     */
     Layer.prototype.scaledValue = function (d, aesthetic) {
         return this.scaleExtracted(this.dataValue(d, aesthetic), aesthetic, d);
+    };
+
+    /**
+     * Given a value in data space and an aesthetic, scale it using
+     * the appropriate scale for the aesthetic. The only reason we
+     * need the original datum, d, is because the scale method on
+     * TextScale needs it. I'm not crazy about that.
+     */
+    Layer.prototype.scaleExtracted = function (v, aesthetic, d) {
+        return this.graphic.scales[aesthetic].scale(v, d);
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
@@ -300,9 +313,9 @@
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Geometry objects are the ones that actually draw stuff onto the
-    // Graphic. They only care about scaled values which they can get
-    // from their layer.
+    // Geometry -- objects that actually draw stuff onto the Graphic.
+    // They only care about scaled values which they can get from
+    // their layer.
 
     function Geometry () {}
 
@@ -369,9 +382,13 @@
 
     LineGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
+
         function scale (d, aesthetic) { return layer.scaledValue(d, aesthetic); }
-        var color = ('color' in layer.mappings) ?
-            function(d) { return scale(d[0], 'color'); } : this.color;
+
+        // Can't use attributeValue here like the other geometries
+        // because we always group the data and then turn each group
+        // into a single array to be used to draw a polyline.
+        var color = ('color' in layer.mappings) ? function(d) { return scale(d[0], 'color'); } : this.color;
 
         var line = d3.svg.line()
             .x(function (d) { return scale(d, 'x') })
@@ -729,6 +746,10 @@
         this.d3Scale = this.d3Scale.range(interval);
     };
 
+    // FIXME: I'm not sure TextScale should even exist. I kind of see
+    // the analog to ColorScale. But it seems more like maybe we just
+    // put the responsibility for turning the datum into text in the
+    // TextGeometry.
     function TextScale(){ }
 
     TextScale.prototype = new Scale();
