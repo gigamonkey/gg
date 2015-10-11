@@ -1,0 +1,63 @@
+body {
+    font-family: "Gill Sans";
+    width: 1000px;
+    margin: .25in auto;
+    background: rgba(221, 204, 187, .15);
+}
+
+h1 {
+    font-weight: 300;
+}
+
+rect.base { fill: rgba(221, 204, 187, 1); }
+
+div#examples span { margin: 3px; }
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.axis line {
+  stroke: #fff;
+}
+
+.axis .minor {
+  stroke-opacity: .5;
+}
+
+.axis path {
+    stroke: #fff;
+    fill: none;
+}
+.axis text {
+  font-size: 8px;
+  font-weight: 300;
+}
+
+.legend {
+    font-size: 10px;
+    font-weight: 300;
+}
+
+.graphicText {
+  font-size: 10px;
+  cursor: pointer;
+  fill: black;
+  text-shadow: 1px 1px 0px white;
+}
+
+.graphicText.showOnHover {
+  fill: transparent;
+  text-shadow: none;
+}
+
+.graphicText.showOnHover:hover {
+  fill: black;
+  text-shadow: 1px 1px 0px white;
+}
+
+/*.arrow {
+    stroke: #88f;
+    fill: #88f;
+    stroke-width: 1px;
+}*/
