@@ -84,18 +84,6 @@
         return _.uniq(_.flatten(_.map(layers, vals)));
     };
 
-    Graphic.prototype.dataMin = function (data, aesthetic) {
-        var layers = this.layersWithAesthetic(aesthetic);
-        function key (layer) { return layer.dataMin(data, aesthetic); }
-        return key(_.min(layers, key));
-    };
-
-    Graphic.prototype.dataMax = function (data, aesthetic) {
-        var layers = this.layersWithAesthetic(aesthetic);
-        function key (layer) { return layer.dataMax(data, aesthetic); }
-        return key(_.max(layers, key));
-    };
-
     Graphic.prototype.layersWithAesthetic = function (aesthetic) {
         function hasAesthetic (layer) { return (aesthetic in layer.mappings); }
         return _.filter(this.layers, hasAesthetic);
@@ -277,28 +265,6 @@
 
     Layer.prototype.render = function (g) {
         this.geometry.render(g, this.newData);
-    };
-
-    Layer.prototype.dataMin = function (data, aesthetic) {
-        if (this.mappings[aesthetic]) {
-            var e = this;
-            function key (d) { return e.dataValue(d, aesthetic); }
-            function min (d) { return _.min(d, key); }
-            return key(min(_.map(data, min)))
-        } else {
-            return this.statistic.dataRange(data)[0];
-        }
-    };
-
-    Layer.prototype.dataMax = function (data, aesthetic) {
-        if (this.mappings[aesthetic]) {
-            var e = this;
-            function key (d) { return e.dataValue(d, aesthetic); }
-            function max (d) { return _.max(d, key); }
-            return key(max(_.map(data, max)))
-        } else {
-            return this.statistic.dataRange(data)[1];
-        }
     };
 
     Layer.prototype.legend = function (aesthetic) {
