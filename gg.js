@@ -9,13 +9,18 @@
         _  = require('underscore');
     }
 
-    function id (x) { return x; }
+    ////////////////////////////////////////////////////////////////////////
+    // Graphic -- the outermost object responsible for rendering a
+    // statistical graphic.
 
     function Graphic (spec) {
-        this.layers     = _.map(spec.layers, function (s) { return new Layer(s, this); }, this);
-        this.aesthetics = _.uniq(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
-        this.scales     = makeScales(spec.scales, this.aesthetics);
-        this.facets     = Facets.fromSpec(spec.facets, this);
+        this.layers = _.map(spec.layers, function (s) { return new Layer(s, this); }, this);
+        this.scales = makeScales(spec.scales, aesthetics(this.layers));
+        this.facets = Facets.fromSpec(spec.facets, this);
+    }
+
+    function aesthetics (layers) {
+        return _.uniq(_.flatten(_.map(layers, function (l) { return l.aesthetics(); })));
     }
 
     function makeScales (scales, aesthetics) {
@@ -696,8 +701,10 @@
 
     CategoricalScale.prototype.defaultDomain = function (values) {
         if (this.values !== undefined) {
+            // Values were passed in the spec
             this.d3Scale.domain(this.values);
         } else {
+            // Otherwise, extracted from data.
             values.sort(function (a,b) { return a - b; });
             this.d3Scale.domain(values);
         }
@@ -788,7 +795,7 @@
 
     function BoxPlotStatistic (spec) {
         this.group = spec.group || false;
-        this.groupOrdering = spec.groupOrdering || id;
+        this.groupOrdering = spec.groupOrdering || function (x) { return x; };
         this.variable = spec.variable || 'value';
     }
 
