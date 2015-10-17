@@ -11,15 +11,7 @@
 
     function id (x) { return x; }
 
-    var defaultPadding = 35;
-
     function Graphic (spec) {
-        // FIXME: padding is more tied to the width and heigh, i.e.
-        // the specific render-time information. It should be passed
-        // with the width and height and perhaps other things that
-        // affect the appearance of the rendered graphic.
-        this.paddingX   = spec.paddingX || spec.padding || defaultPadding;
-        this.paddingY   = spec.paddingY || spec.padding || defaultPadding;
         this.layers     = _.map(spec.layers, function (s) { return new Layer(s, this); }, this);
         this.aesthetics = _.uniq(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
         this.scales     = makeScales(spec.scales, this.aesthetics);
@@ -51,23 +43,12 @@
             if (!s.domainSet) {
                 s.defaultDomain(this.valuesForAesthetic(data, aesthetic))
             }
-            // FIXME: this is done here because it happens that we
-            // won't get to here until the width and height of the
-            // graphic are set, which are necessary to compute the
-            // range for these aesthetics. That's kind of busted.
-            // There should be a clean separation of two or three
-            // phases: one is setting up a graphics object that is
-            // ready to render specific data with specific graphical
-            // parameters. Then possible a separate phase to set up
-            // the graphical parameters. Then the object resulting
-            // from that phase can be used to render one or more
-            // plots.
-            if (aesthetic === 'x') {
-                s.range([this.paddingX, this.width - this.paddingX]);
-            } else if (aesthetic === 'y') {
-                s.range([this.height - this.paddingY, this.paddingY]);
-            }
         }, this);
+    };
+
+    Graphic.prototype.setXYRanges = function (width, height, paddingX, paddingY) {
+        this.scales['x'].range([paddingX, width - paddingX]);
+        this.scales['y'].range([height - paddingY, paddingY]);
     };
 
     Graphic.prototype.valuesForAesthetic = function (data, aesthetic) {
@@ -85,21 +66,24 @@
         return _.filter(this.layers, hasAesthetic);
     };
 
-    Graphic.prototype.render = function (width, height, where, data) {
-        // Render the graphic using the given data into the given HTML
-        // element (a div or span usually).
-        this.width  = width;
-        this.height = height;
 
-        this.svg = where.append('svg')
-            .attr('width', width)
-            .attr('height', height);
+    /*
+     * Return a function that will render the graphic using the given
+     * data into the given HTML element (a div or span usually).
+     */
+    Graphic.prototype.renderer = function (opts, where) {
+        var w  = opts.width;
+        var h  = opts.height;
+        var pX = opts.paddingX || opts.padding;
+        var pY = opts.paddingY || opts.padding;
+        this.setXYRanges(w, h, pX, pY);
 
-        this.facets.render(width, height, this.svg, data);
-    };
+        function render (data) {
+            var svg = where.append('svg').attr('width', w).attr('height', h);
+            this.facets.render(w, h, pX, pY, svg, data);
+        }
 
-    Graphic.prototype.renderer = function (width, height, where) {
-        return _.bind(function (data) { this.render(width, height, where, data); }, this);
+        return _.bind(render, this);
     };
 
     Graphic.prototype.legend = function (aesthetic) {
@@ -136,9 +120,11 @@
         this.graphic = graphic;
     };
 
-    SingleFacet.prototype.render = function (width, height, svg, data) {
-        this.width  = width;
-        this.height = height;
+    SingleFacet.prototype.render = function (width, height, paddingX, paddingY, svg, data) {
+        this.width    = width;
+        this.height   = height;
+        this.paddingX = paddingX;
+        this.paddingY = paddingY;
 
         svg.append('rect')
             .attr('class', 'base')
@@ -151,22 +137,22 @@
 
         var xAxis = d3.svg.axis()
             .scale(this.graphic.scales['x'].d3Scale)
-            .tickSize(2*this.graphic.paddingY - this.height)
+            .tickSize(2*this.paddingY - this.height)
             .orient('bottom');
 
         var yAxis = d3.svg.axis()
             .scale(this.graphic.scales['y'].d3Scale)
-            .tickSize(2*this.graphic.paddingX - this.width)
+            .tickSize(2*this.paddingX - this.width)
             .orient('left');
 
         svg.append('g')
             .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (this.height - this.graphic.paddingY) + ')')
+            .attr('transform', 'translate(0,' + (this.height - this.paddingY) + ')')
             .call(xAxis);
 
         svg.append('g')
             .attr('class', 'y axis')
-            .attr('transform', 'translate(' + this.graphic.paddingX + ',0)')
+            .attr('transform', 'translate(' + this.paddingX + ',0)')
             .call(yAxis);
 
         svg.append('g')
@@ -185,7 +171,7 @@
 
         _.each(
             this.graphic.layers,
-            function (layer) { layer.render(this.graphic.svg.append('g')); },
+            function (layer) { layer.render(svg.append('g')); },
             this);
     };
 
