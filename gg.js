@@ -14,6 +14,10 @@
     var defaultPadding = 35;
 
     function Graphic (spec) {
+        // FIXME: padding is more tied to the width and heigh, i.e.
+        // the specific render-time information. It should be passed
+        // with the width and height and perhaps other things that
+        // affect the appearance of the rendered graphic.
         this.paddingX   = spec.paddingX || spec.padding || defaultPadding;
         this.paddingY   = spec.paddingY || spec.padding || defaultPadding;
         this.layers     = _.map(spec.layers, function (s) { return Layer.fromSpec(s, this); }, this);
@@ -24,40 +28,48 @@
 
     Graphic.fromSpec = function (spec) { return new Graphic(spec); }
 
-    Graphic.prototype.rangeFor = function (aesthetic) {
-        if (aesthetic === 'x') {
-            return [this.paddingX, this.width - this.paddingX];
-        } else if (aesthetic === 'y' || aesthetic === 'y0' || aesthetic === 'y1') {
-            return [this.height - this.paddingY, this.paddingY];
-        } else {
-            throw 'Only 2d graphics supported. Unknown aesthetic: ' + aesthetic;
+    Graphic.prototype.allScales = function (spec, aesthetics) {
+        var specs = _.object(_.map(spec.scales, function (s) { return [ s.aesthetic, s ] }));
+        var self = this;
+
+        function makeScale (a) {
+            var s = a in specs ? Scale.fromSpec(specs[a]) : Scale.defaultFor(a)
+            return s;
         }
+
+        return _.object(_.map(aesthetics, function (a) { return [ a, makeScale(a) ]; }));
     };
 
     Graphic.prototype.prepare = function (data) {
         this.prepareLayers(data);
-        this.trainScales(data);
-    };
-
-    Graphic.prototype.allScales = function (spec, aesthetics) {
-        var specs = _.object(_.map(spec.scales, function (s) { return [ s.aesthetic, s ] }));
-        return _.object(_.map(aesthetics, function (a) {
-            return [a, a in specs ? Scale.fromSpec(specs[a]) : Scale.defaultFor(a) ];
-        }));
+        this.prepareScales(data);
     };
 
     Graphic.prototype.prepareLayers = function (data) {
         _.each(this.layers, function (e) { e.prepare(data); });
     };
 
-    Graphic.prototype.trainScales = function (data) {
+    Graphic.prototype.prepareScales = function (data) {
         _.each(this.aesthetics, function (aesthetic) {
             var s = this.scales[aesthetic];
             if (!s.domainSet) {
                 s.defaultDomain(this.valuesForAesthetic(data, aesthetic))
             }
-            if (aesthetic === 'x' || aesthetic === 'y') {
-                s.range(this.rangeFor(aesthetic));
+            // FIXME: this is done here because it happens that we
+            // won't get to here until the width and height of the
+            // graphic are set, which are necessary to compute the
+            // range for these aesthetics. That's kind of busted.
+            // There should be a clean separation of two or three
+            // phases: one is setting up a graphics object that is
+            // ready to render specific data with specific graphical
+            // parameters. Then possible a separate phase to set up
+            // the graphical parameters. Then the object resulting
+            // from that phase can be used to render one or more
+            // plots.
+            if (aesthetic === 'x') {
+                s.range([this.paddingX, this.width - this.paddingX]);
+            } else if (aesthetic === 'y') {
+                s.range([this.height - this.paddingY, this.paddingY]);
             }
         }, this);
     };
@@ -96,23 +108,14 @@
         this.height = height;
 
         this.svg = where.append('svg')
-            .attr('width', this.width)
-            .attr('height', this.height);
+            .attr('width', width)
+            .attr('height', height);
 
         this.facets.render(width, height, this.svg, data);
     };
 
     Graphic.prototype.renderer = function (width, height, where) {
         return _.bind(function (data) { this.render(width, height, where, data); }, this);
-    };
-
-
-    /*Graphic.prototype.layer = function (e) {
-        this.layers.push(e);
-    };*/
-
-    Graphic.prototype.scale = function (s) {
-        this.scales[s.aesthetic] = s;
     };
 
     Graphic.prototype.legend = function (aesthetic) {
@@ -683,10 +686,10 @@
             log:         LogScale,
             categorical: CategoricalScale,
             color:       ColorScale
-        }[spec.type || 'linear'])();;
+        }[spec.type || 'linear'])();
 
         spec.aesthetic !== undefined && (s.aesthetic = spec.aesthetic);
-        spec.values    !== undefined && s.values(spec.values);
+        spec.values    !== undefined && (s.values = spec.values);
         spec.min       !== undefined && (s.min = spec.min);
         spec.max       !== undefined && (s.max = spec.max);
         spec.range     !== undefined && s.range(spec.range);
@@ -745,20 +748,18 @@
 
     LogScale.prototype = new Scale();
 
-    function CategoricalScale () {
-        this.d3Scale = d3.scale.ordinal();
-    }
+    function CategoricalScale () { this.d3Scale = d3.scale.ordinal(); }
 
     CategoricalScale.prototype = new Scale();
 
-    CategoricalScale.prototype.values = function (values) {
-        this.domainSet = true;
-        this.d3Scale.domain(values);
-    };
-
     CategoricalScale.prototype.defaultDomain = function (values) {
-        values.sort(function (a,b) { return a - b; });
-        this.values(values);
+        if (this.values !== undefined) {
+            this.d3Scale.domain(this.values);
+        } else {
+            values.sort(function (a,b) { return a - b; });
+            this.d3Scale.domain(values);
+        }
+        this.domainSet = true;
     };
 
     CategoricalScale.prototype.range = function (interval) {
@@ -767,15 +768,11 @@
         this.d3Scale = this.d3Scale.rangeRoundBands(interval, 1);
     };
 
-    function ColorScale() {
-        this.d3Scale = d3.scale.category20();
-    }
+    function ColorScale() { this.d3Scale = d3.scale.category20(); }
 
-    ColorScale.prototype = new CategoricalScale();
+    ColorScale.prototype = new Scale();
 
-    ColorScale.prototype.range = function (interval) {
-        this.d3Scale = this.d3Scale.range(interval);
-    };
+    ColorScale.prototype.defaultDomain = CategoricalScale.prototype.defaultDomain;
 
 
     ////////////////////////////////////////////////////////////////////////
