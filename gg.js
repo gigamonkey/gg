@@ -20,23 +20,19 @@
         // affect the appearance of the rendered graphic.
         this.paddingX   = spec.paddingX || spec.padding || defaultPadding;
         this.paddingY   = spec.paddingY || spec.padding || defaultPadding;
-        this.layers     = _.map(spec.layers, function (s) { return Layer.fromSpec(s, this); }, this);
-        this.facets     = Facets.fromSpec(spec.facets, this);
+        this.layers     = _.map(spec.layers, function (s) { return new Layer(s, this); }, this);
         this.aesthetics = _.uniq(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
-        this.scales     = this.allScales(spec, this.aesthetics);
+        this.scales     = makeScales(spec.scales, this.aesthetics);
+        this.facets     = Facets.fromSpec(spec.facets, this);
     }
 
     Graphic.fromSpec = function (spec) { return new Graphic(spec); }
 
-    Graphic.prototype.allScales = function (spec, aesthetics) {
-        var specs = _.object(_.map(spec.scales, function (s) { return [ s.aesthetic, s ] }));
-        var self = this;
-
+    function makeScales (scales, aesthetics) {
+        var scaleSpecs = _.object(_.map(scales, function (s) { return [ s.aesthetic, s ] }));
         function makeScale (a) {
-            var s = a in specs ? Scale.fromSpec(specs[a]) : Scale.defaultFor(a)
-            return s;
+            return a in scaleSpecs ? Scale.fromSpec(scaleSpecs[a]) : Scale.defaultFor(a)
         }
-
         return _.object(_.map(aesthetics, function (a) { return [ a, makeScale(a) ]; }));
     };
 
@@ -200,18 +196,12 @@
     // to aesthetics. It uses the graphics to get at the scales for
     // the different aesthetics.
 
-    function Layer (geometry, graphic, spec) {
-        this.geometry = geometry;
-        this.graphic  = graphic;
-        this.mappings = {};
-        this.geometry.layer = this;
-        if (spec.mapping !== undefined) this.mappings = spec.mapping;
+    function Layer (spec, graphic) {
+        this.geometry  = Geometry.fromSpec(spec, this);
         this.statistic = Statistic.fromSpec(spec.statistic);
+        this.graphic   = graphic;
+        this.mappings  = spec.mapping !== undefined ? spec.mapping : {};
     }
-
-    Layer.fromSpec = function (spec, graphic) {
-        return new Layer(Geometry.fromSpec(spec), graphic, spec);
-    };
 
     /**
      * Given a datum and an aesthetic, extract the corresponding value
@@ -283,8 +273,8 @@
 
     function Geometry () {}
 
-    Geometry.fromSpec = function (spec) {
-        return new ({
+    Geometry.fromSpec = function (spec, layer) {
+        var g = new ({
             point:    PointGeometry,
             line:     LineGeometry,
             area:     AreaGeometry,
@@ -293,6 +283,8 @@
             arrow:    ArrowGeometry,
             text:     TextGeometry
         }[spec.geometry || 'point'])(spec);
+        g.layer = layer;
+        return g;
     };
 
     Geometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
