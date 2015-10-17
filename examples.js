@@ -54,7 +54,7 @@
         layers: [
             { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
             { geometry: 'line', mapping: { x: 'd', y: 'r' } }
-            /*{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 },*/
+            //{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 },
         ]
     });
 

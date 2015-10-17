@@ -11,22 +11,17 @@
 
     function id (x) { return x; }
 
-    function Graphic (opts) {
-        this.layers = [];
-        this.scales = {};
+    var defaultPadding = 35;
 
-        opts = opts || { padding: 35 };
-        this.paddingX = opts.paddingX || opts.padding;
-        this.paddingY = opts.paddingY || opts.padding;
+    function Graphic (spec) {
+        this.scales   = _.object(_.map(spec.scales, function (sp) { var s = Scale.fromSpec(sp); return [s.aesthetic, s] }));
+        this.layers   = _.map(spec.layers, function (s) { return Layer.fromSpec(s, this); }, this);
+        this.facets   = Facets.fromSpec(spec.facets, this);
+        this.paddingX = spec.paddingX || spec.padding || defaultPadding;
+        this.paddingY = spec.paddingY || spec.padding || defaultPadding;
     }
 
-    Graphic.fromSpec = function (spec, opts) {
-        var g = new Graphic(opts);
-        _.each(spec.layers, function (s) { g.layer(Layer.fromSpec(s, g)); });
-        _.each(spec.scales, function (s) { g.scale(Scale.fromSpec(s)); });
-        g.facets = Facets.fromSpec(spec.facets, g);
-        return g;
-    };
+    Graphic.fromSpec = function (spec) { return new Graphic(spec); }
 
     Graphic.prototype.rangeFor = function (aesthetic) {
         if (aesthetic === 'x') {
@@ -39,12 +34,11 @@
     };
 
     Graphic.prototype.prepare = function (data) {
-        var aesthetics = _.union(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
+        var aesthetics = _.uniq(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
         this.ensureScales(aesthetics);
         this.prepareLayers(data);
         this.trainScales(data, aesthetics);
     };
-
 
     Graphic.prototype.ensureScales = function (aesthetics) {
         _.each(aesthetics, function (aesthetic) {
@@ -115,9 +109,9 @@
     };
 
 
-    Graphic.prototype.layer = function (e) {
+    /*Graphic.prototype.layer = function (e) {
         this.layers.push(e);
-    };
+    };*/
 
     Graphic.prototype.scale = function (s) {
         this.scales[s.aesthetic] = s;
@@ -217,29 +211,17 @@
     // to aesthetics. It uses the graphics to get at the scales for
     // the different aesthetics.
 
-    function Layer (geometry, graphic) {
-        this.geometry  = geometry;
-        this.graphic   = graphic;
-        this.mappings  = {};
-        this.statistic = null;
+    function Layer (geometry, graphic, spec) {
+        this.geometry = geometry;
+        this.graphic  = graphic;
+        this.mappings = {};
+        this.geometry.layer = this;
+        if (spec.mapping !== undefined) this.mappings = spec.mapping;
+        this.statistic = Statistic.fromSpec(spec.statistic);
     }
 
     Layer.fromSpec = function (spec, graphic) {
-        var geometry = new {
-            point:    PointGeometry,
-            line:     LineGeometry,
-            area:     AreaGeometry,
-            interval: IntervalGeometry,
-            box:      BoxPlotGeometry,
-            arrow:    ArrowGeometry,
-            text:     TextGeometry
-        }[spec.geometry || 'point'](spec);
-
-        var layer = new Layer(geometry, graphic);
-        geometry.layer = layer;
-        spec.mapping !== undefined && (layer.mappings = spec.mapping);
-        layer.statistic = Statistics.fromSpec(spec.statistic || { kind: 'identity' });
-        return layer;
+        return new Layer(Geometry.fromSpec(spec), graphic, spec);
     };
 
     /**
@@ -328,21 +310,34 @@
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // Geometry -- objects that actually draw stuff onto the Graphic.
+    // Geometries -- objects that actually draw stuff onto the Graphic.
     // They only care about scaled values which they can get from
     // their layer.
 
     function Geometry () {}
 
+    Geometry.fromSpec = function (spec) {
+        return new ({
+            point:    PointGeometry,
+            line:     LineGeometry,
+            area:     AreaGeometry,
+            interval: IntervalGeometry,
+            box:      BoxPlotGeometry,
+            arrow:    ArrowGeometry,
+            text:     TextGeometry
+        }[spec.geometry || 'point'])(spec);
+    };
+
     Geometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
         return [ datum[mapped] ];
-    }
+    };
 
     function PointGeometry (spec) {
         this.size  = spec.size || 5;
         this.alpha = spec.alpha || 1;
         this.color = spec.color || 'black';
     }
+
 
     PointGeometry.prototype = new Geometry();
 
@@ -684,13 +679,13 @@
     function Scale () {}
 
     Scale.fromSpec = function (spec) {
-        var s = new {
+        var s = new ({
             linear:      LinearScale,
             time:        TimeScale,
             log:         LogScale,
             categorical: CategoricalScale,
             color:       ColorScale
-        }[spec.type || 'linear'];
+        }[spec.type || 'linear'])();;
 
         spec.aesthetic !== undefined && (s.aesthetic = spec.aesthetic);
         spec.values    !== undefined && s.values(spec.values);
@@ -703,7 +698,7 @@
     };
 
     Scale.defaultFor = function (aesthetic) {
-        var s = new {
+        var s = new ({
             x:     LinearScale,
             y:     LinearScale,
             y0:    LinearScale,
@@ -711,7 +706,7 @@
             color: ColorScale,
             fill:  ColorScale,
             size:  LinearScale,
-        }[aesthetic]();
+        }[aesthetic])();
         s.aesthetic = aesthetic;
         return s;
     };
@@ -788,17 +783,17 @@
     ////////////////////////////////////////////////////////////////////////
     // Statistics
 
-    var Statistics = {
-        identity: IdentityStatistic,
-        bin:      BinStatistic,
-        box:      BoxPlotStatistic,
-        arrow:    ArrowStatistic,
-        sum:      SumStatistic
-    };
-
-    Statistics.fromSpec = function (spec) { return new this[spec.kind](spec); };
-
     function Statistic () {}
+
+    Statistic.fromSpec = function (spec) {
+        return new ({
+            identity: IdentityStatistic,
+            bin:      BinStatistic,
+            box:      BoxPlotStatistic,
+            arrow:    ArrowStatistic,
+            sum:      SumStatistic
+        }[spec ? spec.kind : 'identity'])(spec);
+    };
 
     function IdentityStatistic () {}
 
@@ -970,6 +965,6 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
-    exports.gg = function gg (spec, opts) { return Graphic.fromSpec(spec, opts); }
+    exports.gg = function gg (spec) { return Graphic.fromSpec(spec); }
 
 })(this);
