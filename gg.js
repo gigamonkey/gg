@@ -14,11 +14,12 @@
     var defaultPadding = 35;
 
     function Graphic (spec) {
-        this.scales   = _.object(_.map(spec.scales, function (sp) { var s = Scale.fromSpec(sp); return [s.aesthetic, s] }));
-        this.layers   = _.map(spec.layers, function (s) { return Layer.fromSpec(s, this); }, this);
-        this.facets   = Facets.fromSpec(spec.facets, this);
-        this.paddingX = spec.paddingX || spec.padding || defaultPadding;
-        this.paddingY = spec.paddingY || spec.padding || defaultPadding;
+        this.paddingX   = spec.paddingX || spec.padding || defaultPadding;
+        this.paddingY   = spec.paddingY || spec.padding || defaultPadding;
+        this.layers     = _.map(spec.layers, function (s) { return Layer.fromSpec(s, this); }, this);
+        this.facets     = Facets.fromSpec(spec.facets, this);
+        this.aesthetics = _.uniq(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
+        this.scales     = this.allScales(spec, this.aesthetics);
     }
 
     Graphic.fromSpec = function (spec) { return new Graphic(spec); }
@@ -34,26 +35,23 @@
     };
 
     Graphic.prototype.prepare = function (data) {
-        var aesthetics = _.uniq(_.flatten(_.map(this.layers, function (l) { return l.aesthetics(); })));
-        this.ensureScales(aesthetics);
         this.prepareLayers(data);
-        this.trainScales(data, aesthetics);
+        this.trainScales(data);
     };
 
-    Graphic.prototype.ensureScales = function (aesthetics) {
-        _.each(aesthetics, function (aesthetic) {
-            if (! this.scales[aesthetic]) {
-                this.scales[aesthetic] = Scale.defaultFor(aesthetic);
-            }
-        }, this);
+    Graphic.prototype.allScales = function (spec, aesthetics) {
+        var specs = _.object(_.map(spec.scales, function (s) { return [ s.aesthetic, s ] }));
+        return _.object(_.map(aesthetics, function (a) {
+            return [a, a in specs ? Scale.fromSpec(specs[a]) : Scale.defaultFor(a) ];
+        }));
     };
 
     Graphic.prototype.prepareLayers = function (data) {
         _.each(this.layers, function (e) { e.prepare(data); });
     };
 
-    Graphic.prototype.trainScales = function (data, aesthetics) {
-        _.each(aesthetics, function (aesthetic) {
+    Graphic.prototype.trainScales = function (data) {
+        _.each(this.aesthetics, function (aesthetic) {
             var s = this.scales[aesthetic];
             if (!s.domainSet) {
                 s.defaultDomain(this.valuesForAesthetic(data, aesthetic))
