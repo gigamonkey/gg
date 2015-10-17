@@ -18,8 +18,6 @@
         this.facets     = Facets.fromSpec(spec.facets, this);
     }
 
-    Graphic.fromSpec = function (spec) { return new Graphic(spec); }
-
     function makeScales (scales, aesthetics) {
         var scaleSpecs = _.object(_.map(scales, function (s) { return [ s.aesthetic, s ] }));
         function makeScale (a) {
@@ -904,6 +902,6 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
-    exports.gg = function gg (spec) { return Graphic.fromSpec(spec); }
+    exports.gg = function gg (spec) { return new Graphic(spec); }
 
 })(this);
