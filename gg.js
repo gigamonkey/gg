@@ -26,27 +26,21 @@
         return _.object(_.map(aesthetics, function (a) { return [ a, makeScale(a) ]; }));
     };
 
-    Graphic.prototype.prepare = function (data) {
-        this.prepareLayers(data);
-        this.prepareScales(data);
-    };
-
-    Graphic.prototype.prepareLayers = function (data) {
-        _.each(this.layers, function (e) { e.prepare(data); });
-    };
-
-    Graphic.prototype.prepareScales = function (data) {
-        _.each(this.aesthetics, function (aesthetic) {
-            var s = this.scales[aesthetic];
-            if (!s.domainSet) {
-                s.defaultDomain(this.valuesForAesthetic(data, aesthetic))
-            }
-        }, this);
-    };
-
+    /*
+     * Once we know the graphical parameters, set the ranges of the X
+     * and Y scales appropriately.
+     */
     Graphic.prototype.setXYRanges = function (width, height, paddingX, paddingY) {
         this.scales['x'].range([paddingX, width - paddingX]);
         this.scales['y'].range([height - paddingY, paddingY]);
+    };
+
+    /*
+     * Prepare the layers and scales to render a specific data set.
+     */
+    Graphic.prototype.prepare = function (data) {
+        _.each(this.layers, function (e) { e.prepare(data); });
+        _.each(this.scales, function (s) { s.prepare(data, this); }, this);
     };
 
     Graphic.prototype.valuesForAesthetic = function (data, aesthetic) {
@@ -652,6 +646,12 @@
         }[aesthetic])();
         s.aesthetic = aesthetic;
         return s;
+    };
+
+    Scale.prototype.prepare = function (data, graphic) {
+        if (!this.domainSet) {
+            this.defaultDomain(graphic.valuesForAesthetic(data, this.aesthetic))
+        }
     };
 
     Scale.prototype.defaultDomain = function (values) {
