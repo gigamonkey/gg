@@ -53,7 +53,7 @@
             statistic: { kind: 'sum', group: 'who', variable: 'purchases' }
         }],
         scales: [
-            { type: 'categorical', aesthetic: 'x' },
+            { aesthetic: 'x', type: 'categorical' },
             { aesthetic: 'y', min: 0 }
         ]
     });
@@ -63,20 +63,20 @@
             { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
             { geometry: 'line', mapping: { x: 'd', y: 'r' } }
         ],
-        scales: [ { type: 'log', aesthetic: 'y', legend: 'whatever' },
-                  { aesthetic: 'x', legend: 'foo' } ]
+        scales: [
+            { aesthetic: 'y', type: 'log', legend: 'whatever' },
+            { aesthetic: 'x', legend: 'foo' }
+        ]
     });
 
     var heightHistogram = g({
-        layers: [
-            {
-                geometry: 'interval',
-                mapping: { x: 'bin', y: 'count' },
-                statistic: { kind: 'bin', variable: 'height', bins: 30 }
-            }
-        ],
+        layers: [{
+            geometry: 'interval',
+            mapping: { x: 'bin', y: 'count' },
+            statistic: { kind: 'bin', variable: 'height', bins: 30 }
+        }],
         scales: [
-            { type: 'categorical', aesthetic: 'x' },
+            { aesthetic: 'x', type: 'categorical' },
             { aesthetic: 'y', min: 0 }
         ]
     });
@@ -96,7 +96,7 @@
             statistic: { kind: 'box', group: 'grade', variable: 'value' }
         }],
         scales: [
-            { type: 'categorical', aesthetic: 'x' }
+            { aesthetic: 'x', type: 'categorical' }
         ]
     });
 
