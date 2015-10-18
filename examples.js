@@ -15,7 +15,7 @@
 
     var symmetric = g({
         layers: [ { geometry: 'line', mapping: { x: 'd', y: 'r' } }, ],
-        scales: [ { type: 'linear', aesthetic: 'y', center: 0 } ]
+        scales: [ { aesthetic: 'y', center: 0 } ]
     });
 
     var linechart = g({
@@ -24,13 +24,13 @@
             { geometry: 'text', mapping: { x: 'd', y: 'r', }, text: '{d}, {r}', show: 'hover' }
         ],
         scales: [
-            { aesthetic: 'color', type: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
+            { aesthetic: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] }
         ]
     });
 
     var barchart = g({
         layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, color: 'blue', width: 2 }],
-        scales: [{ type: 'linear', aesthetic: 'y', min: 0 }]
+        scales: [{ aesthetic: 'y', min: 0 }]
     });
 
     var histogram = g({
@@ -42,7 +42,7 @@
         }],
         scales: [
             { type: 'categorical', aesthetic: 'x' },
-            { type: 'linear', aesthetic: 'y', min: 0 }
+            { aesthetic: 'y', min: 0 }
         ]
     });
 
@@ -60,7 +60,7 @@
             { geometry: 'line', mapping: { x: 'd', y: 'r' } }
         ],
         scales: [ { type: 'log', aesthetic: 'y', legend: 'whatever' },
-                      { aesthetic: 'x', legend: 'foo' } ]
+                  { aesthetic: 'x', legend: 'foo' } ]
     });
 
     var heightHistogram = g({
@@ -73,7 +73,7 @@
         ],
         scales: [
             { type: 'categorical', aesthetic: 'x' },
-            { type: 'linear', aesthetic: 'y', min: 0 }
+            { aesthetic: 'y', min: 0 }
         ]
     });
 

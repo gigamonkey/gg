@@ -615,14 +615,25 @@
 
     function Scale () {}
 
+    Scale.defaultTypes = {
+        x:     'linear',
+        y:     'linear',
+        y0:    'linear',
+        y1:    'linear',
+        color: 'color',
+        fill:  'color',
+        size:  'linear',
+    };
+
     Scale.fromSpec = function (spec) {
+
         var s = new ({
             linear:      LinearScale,
             time:        TimeScale,
             log:         LogScale,
             categorical: CategoricalScale,
             color:       ColorScale
-        }[spec.type || 'linear'])();
+        }[spec.type || (spec.aesthetic in Scale.defaultTypes ? Scale.defaultTypes[spec.aesthetic] : 'linear')])();
 
         spec.aesthetic !== undefined && (s.aesthetic = spec.aesthetic);
         spec.values    !== undefined && (s.values = spec.values);
@@ -635,17 +646,7 @@
     };
 
     Scale.defaultFor = function (aesthetic) {
-        var s = new ({
-            x:     LinearScale,
-            y:     LinearScale,
-            y0:    LinearScale,
-            y1:    LinearScale,
-            color: ColorScale,
-            fill:  ColorScale,
-            size:  LinearScale,
-        }[aesthetic])();
-        s.aesthetic = aesthetic;
-        return s;
+        return Scale.fromSpec({ aesthetic: aesthetic });
     };
 
     Scale.prototype.prepare = function (values) {
