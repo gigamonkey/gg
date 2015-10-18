@@ -11,13 +11,6 @@
 
     function g (spec) { return gg(spec).renderer(div, opts); }
 
-    var scatterplot = g({ layers: [{ geometry: 'point', mapping: { x: 'd', y: 'r' } }] });
-
-    var symmetric = g({
-        layers: [ { geometry: 'line', mapping: { x: 'd', y: 'r' } }, ],
-        scales: [ { aesthetic: 'y', center: 0 } ]
-    });
-
     var linechart = g({
         layers: [
             { geometry: 'line', mapping: { x: 'd', y: 'r', group: 'subject', color: 'subject'} },
@@ -28,9 +21,28 @@
         ]
     });
 
+    var combined = g({
+        layers: [
+            { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
+            { geometry: 'line', mapping: { x: 'd', y: 'r' } }
+            //{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 },
+        ]
+    });
+
     var barchart = g({
         layers: [{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, color: 'blue', width: 2 }],
         scales: [{ aesthetic: 'y', min: 0 }]
+    });
+
+    var quadrants = g({
+        layers: [
+            {
+                geometry: 'point',
+                mapping: { x: 'x', y: 'y', size: 'size' }
+            },
+            { geometry: 'text', mapping: { x: 'x', y: 'y' }, text: '{name}: {size}',  show: 'hover' }
+        ],
+        scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
     });
 
     var histogram = g({
@@ -43,14 +55,6 @@
         scales: [
             { type: 'categorical', aesthetic: 'x' },
             { aesthetic: 'y', min: 0 }
-        ]
-    });
-
-    var combined = g({
-        layers: [
-            { geometry: 'point', mapping: { x: 'd', y: 'r' }, size: 3 },
-            { geometry: 'line', mapping: { x: 'd', y: 'r' } }
-            //{ geometry: 'interval', mapping: { x: 'd', y: 'r' }, width: 2 },
         ]
     });
 
@@ -77,6 +81,14 @@
         ]
     });
 
+    var twoPopulations = g({
+        name: 'twoPopulations',
+        layers: [ {
+            geometry: 'point',
+            mapping: { x: 'intelligence', y: 'wisdom', color: 'group' },
+        }]
+    });
+
     var boxplot = g({
         layers: [ {
             geometry: 'box',
@@ -88,23 +100,9 @@
         ]
     });
 
-    var twoPopulations = g({
-        name: 'twoPopulations',
-        layers: [ {
-            geometry: 'point',
-            mapping: { x: 'intelligence', y: 'wisdom', color: 'group' },
-        }]
-    });
-
-    var quadrants = g({
-        layers: [
-            {
-                geometry: 'point',
-                mapping: { x: 'x', y: 'y', size: 'size' }
-            },
-            { geometry: 'text', mapping: { x: 'x', y: 'y' }, text: '{name}: {size}',  show: 'hover' }
-        ],
-        scales: [ { aesthetic: 'size', range: [ 1, 5 ]} ]
+    var symmetric = g({
+        layers: [ { geometry: 'line', mapping: { x: 'd', y: 'r' } }, ],
+        scales: [ { aesthetic: 'y', center: 0 } ]
     });
 
     var areachartSmooth = g({
