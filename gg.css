@@ -78,3 +78,8 @@ path.line.b { stroke: #0f0; }
 path.line.c { stroke: #00f; }
 path.line.d { stroke: #f0f; }
 */
+
+.twoPopulations circle.points {
+    fill-opacity: 0.5;
+    r: 2;
+}

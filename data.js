@@ -160,7 +160,7 @@
         ];
 
         return _.map(_.range(2000), function (i) {
-            var g            = groups[i % 2];
+            var g            = groups[i % groups.length];
             var intelligence = g.rng1();
             var wisdom       = (1 + g.rng2()) * intelligence;
             return {

@@ -17,8 +17,6 @@
         return _.max(data, function (d) { return d.y; });
     }
 
-
-
     function spec(label) {
         return {
             layers: [
@@ -46,13 +44,13 @@
         };
     }
 
-    var opts = { padding: 50 };
+    var opts = { width: 500, height: 300, padding: 50 };
 
     var commify = d3.format(",d")
 
     _.map([10, 100, 1000, 10000], function (n) {
         var label = 'EE Engineers out of ' + commify(n) + ' (s = ' + s + '; b = ' + b + ')';
-        gg(spec(label), opts).render(500, 300, d3.select('#chart' + n), data(n));
+        gg(spec(label)).renderer(d3.select('#chart' + n), opts)(data(n));
     });
 
 }();

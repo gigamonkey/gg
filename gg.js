@@ -14,6 +14,7 @@
     // statistical graphic.
 
     function Graphic (spec) {
+        this.name = spec.name;
         var layers = _.map(spec.layers, function (s) { return new Layer(s); }, this);
         var scales = makeScales(spec.scales, aesthetics(layers));
         this.facet = new Facet(layers, scales);
@@ -31,6 +32,7 @@
 
         function render (data) {
             var svg = where.append('svg').attr('width', w).attr('height', h);
+            if (this.name) svg.attr('class', this.name);
             this.facet.render(0, 0, w, h, pX, pY, svg, data);
             /*
               var p = 12;
@@ -193,6 +195,18 @@
     };
 
     /**
+     * For a given aesthetic, if there is a mapping for the aesthetic,
+     * return a function that will extract the appropriate value from
+     * the a datum and map it to the aesthetic value. Otherwise return
+     * the default value.
+     */
+    Layer.prototype.attributeValue = function (aesthetic, defaultValue) {
+        return (aesthetic in this.mappings) ?
+            _.bind(function (d) { return this.aestheticValue(d, aesthetic); }, this) : defaultValue;
+    }
+
+
+    /**
      * Extract the field from the datum corresponding to the given
      * aesthetic.
      */
@@ -239,11 +253,6 @@
         return this.mappings[aesthetic] || this.statistic.variable;
     };
 
-    Layer.prototype.attributeValue = function (aesthetic, defaultValue) {
-        return (aesthetic in this.mappings) ?
-            _.bind(function (d) { return this.aestheticValue(d, aesthetic); }, this) : defaultValue;
-    }
-
     ////////////////////////////////////////////////////////////////////////
     // Geometries -- objects that actually draw stuff onto the Graphic.
     // They only care about scaled values which they can get from
@@ -271,7 +280,6 @@
 
     function PointGeometry (spec) {
         this.size  = spec.size || 5;
-        this.alpha = spec.alpha || 1;
         this.color = spec.color || 'black';
     }
 
@@ -284,9 +292,10 @@
             .data(Object)
             .enter()
             .append('circle')
+            .attr('class', 'points')
             .attr('cx', function (d) { return layer.aestheticValue(d, 'x'); })
             .attr('cy', function (d) { return layer.aestheticValue(d, 'y'); })
-            .attr('fill-opacity', this.alpha)
+            .attr('fill-opacity', 1)
             .attr('fill', layer.attributeValue('color', this.color))
             .attr('r', layer.attributeValue('size', this.size));
     };
@@ -774,17 +783,17 @@
     SumStatistic.prototype = new Statistic();
 
     SumStatistic.prototype.compute = function (data) {
-        var groups = groupData(data, this.group),
-            value = _.bind(function(point) {
-                return point[this.variable];
-            }, this);
+        var groups = groupData(data, this.group);
+        var value  = _.bind(function(point) { return point[this.variable]; }, this);
         return _.map(groups, function (values, name) {
+            sum = d3.sum(values, value);
             return {
                 group: name,
                 count: values.length,
-                sum: d3.sum(values, value),
+                sum: sum,
                 min: d3.min(values, value),
-                max: d3.max(values, value)
+                max: d3.max(values, value),
+                mean: sum/values.length
             };
         });
     };

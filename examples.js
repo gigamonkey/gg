@@ -89,11 +89,10 @@
     });
 
     var twoPopulations = g({
+        name: 'twoPopulations',
         layers: [ {
             geometry: 'point',
             mapping: { x: 'intelligence', y: 'wisdom', color: 'group' },
-            size: 2,
-            alpha: 0.5
         }]
     });
 
