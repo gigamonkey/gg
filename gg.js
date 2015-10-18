@@ -20,15 +20,6 @@
     }
 
     /*
-     * Once we know the graphical parameters, set the ranges of the X
-     * and Y scales appropriately.
-     */
-    Graphic.prototype.setXYRanges = function (width, height, paddingX, paddingY) {
-        this.scales['x'].range([paddingX, width - paddingX]);
-        this.scales['y'].range([height - paddingY, paddingY]);
-    };
-
-    /*
      * Prepare the layers and scales to render a specific data set.
      */
     Graphic.prototype.prepare = function (data) {
@@ -68,6 +59,15 @@
         }
 
         return _.bind(render, this);
+    };
+
+    /*
+     * Once we know the graphical parameters, set the ranges of the X
+     * and Y scales appropriately.
+     */
+    Graphic.prototype.setXYRanges = function (width, height, paddingX, paddingY) {
+        this.scales['x'].range([paddingX, width - paddingX]);
+        this.scales['y'].range([height - paddingY, paddingY]);
     };
 
     Graphic.prototype.legend = function (aesthetic) {
