@@ -59,6 +59,10 @@
 
         function render (data) {
             var svg = where.append('svg').attr('width', w).attr('height', h);
+            // FIXME: the Graphic's prepare should prepare the
+            // underlying facets which each know if they have
+            // subfacets that need to be prepared on a subset of the
+            // data.
             this.prepare(data);
             this.facets.render(w, h, pX, pY, svg, data);
         }
@@ -97,20 +101,18 @@
     // actually implemented yet except the trivial single facet case.
     // -Peter)
 
-    var Facets = {};
-
-    Facets.fromSpec = function (spec, graphic) {
-        if (spec === undefined) {
-            return new SingleFacet(graphic);
-        } else {
-            throw 'Other facets not yet implemented.';
+    var Facets = {
+        fromSpec: function (spec, graphic) {
+            if (spec === undefined) {
+                return new SingleFacet(graphic);
+            } else {
+                throw 'Other facets not yet implemented.';
+            }
         }
     };
 
     // Used when the whole graphic is renderered in a single facet.
-    function SingleFacet (graphic) {
-        this.graphic = graphic;
-    };
+    function SingleFacet (graphic) { this.graphic = graphic; };
 
     SingleFacet.prototype.render = function (width, height, paddingX, paddingY, svg, data) {
 
@@ -150,7 +152,7 @@
 
         svg.append('g')
             .attr('class', 'y legend')
-            .attr('transform', 'translate(' + 10 + ',' + (height /2) + ') rotate(270)')
+            .attr('transform', 'translate(' + 10 + ',' + (height / 2) + ') rotate(270)')
             .append('text')
             .text(this.graphic.legend('y'))
             .attr('text-anchor', 'middle');
