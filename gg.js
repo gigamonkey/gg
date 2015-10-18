@@ -63,7 +63,6 @@
         return _.filter(this.layers, hasAesthetic);
     };
 
-
     /*
      * Return a function that will render the graphic using the given
      * data into the given HTML element (a div or span usually).
@@ -130,6 +129,10 @@
             .attr('width', this.width)
             .attr('height', this.height);
 
+        // FIXME: this is hinky. Probably the layers should belong to
+        // the facet since a layer only renders into a single facet
+        // (true?) The scales may belong to the facet or an enclosing
+        // facet.
         this.graphic.prepare(data);
 
         var xAxis = d3.svg.axis()
@@ -212,7 +215,6 @@
         // all the fields except for whatever the x aesthetic maps to.
         return this.geometry.valuesForAesthetic(datum, aesthetic, this.mappings[aesthetic], this);
     };
-
 
     /**
      * Given a value in data space and an aesthetic, scale it using
