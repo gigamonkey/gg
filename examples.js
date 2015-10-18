@@ -123,20 +123,20 @@
     // ... and render 'em
 
     var data = gg.sampleData;
+    var div  = d3.select('#examples');
     var opts = { width: 300, height: 200, padding: 35 };
-    var ex   = function () { return d3.select('#examples').append('span'); };
 
-    linechart.renderer(opts, ex())(data.upwardSubjects);
-    combined.renderer(opts, ex())(data.upward);
-    barchart.renderer(opts, ex())(_.map(data.upward, function (d) { return { d: d.d, r: Math.max(d.r, 0) }; }));
-    quadrants.renderer(opts, ex())(data.quadrants);
-    histogram.renderer(opts, ex())(data.purchases);
-    semilog.renderer(opts, ex())(data.semiLogData);
-    heightHistogram.renderer(opts, ex())(data.heightWeight);
-    twoPopulations.renderer(opts, ex())(data.twoPopulations);
-    boxplot.renderer(opts, ex())(data.forBoxPlots);
-    symmetric.renderer(opts, ex())(data.toBeCentered);
-    areachartSmooth.renderer(opts, ex())(data.upwardPairs);
-    areachart.renderer(opts, ex())(data.upwardPairs);
+    linechart.renderer(div, opts)(data.upwardSubjects);
+    combined.renderer(div, opts)(data.upward);
+    barchart.renderer(div, opts)(_.map(data.upward, function (d) { return { d: d.d, r: Math.max(d.r, 0) }; }));
+    quadrants.renderer(div, opts)(data.quadrants);
+    histogram.renderer(div, opts)(data.purchases);
+    semilog.renderer(div, opts)(data.semiLogData);
+    heightHistogram.renderer(div, opts)(data.heightWeight);
+    twoPopulations.renderer(div, opts)(data.twoPopulations);
+    boxplot.renderer(div, opts)(data.forBoxPlots);
+    symmetric.renderer(div, opts)(data.toBeCentered);
+    areachartSmooth.renderer(div, opts)(data.upwardPairs);
+    areachart.renderer(div, opts)(data.upwardPairs);
 
 })();

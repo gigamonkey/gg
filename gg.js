@@ -14,64 +14,35 @@
     // statistical graphic.
 
     function Graphic (spec) {
-        this.layers = _.map(spec.layers, function (s) { return new Layer(s, this); }, this);
-        this.scales = makeScales(spec.scales, aesthetics(this.layers));
-        this.facets = Facets.fromSpec(spec.facets, this);
+        var layers = _.map(spec.layers, function (s) { return new Layer(s); }, this);
+        var scales = makeScales(spec.scales, aesthetics(layers));
+        this.facet = new Facet(layers, scales);
     }
-
-    /*
-     * Prepare the layers and scales to render a specific data set.
-     */
-    Graphic.prototype.prepare = function (data) {
-
-        function values (a) {
-            function hasAesthetic (layer) { return (a in layer.mappings); }
-            function vals (layer) {
-                function v (d) { return layer.dataValues(d, a); }
-                return _.flatten(_.map(layer.statistic.compute(data), v));
-            }
-            return _.uniq(_.flatten(_.map(_.filter(this.layers, hasAesthetic), vals)));
-        }
-
-        _.each(this.layers, function (e) { e.prepare(data); });
-        _.each(this.scales, function (s) { s.prepare(_.bind(values, this)); }, this);
-    };
 
     /*
      * Return a function that will render the graphic using the given
      * data into the given HTML element (a div or span usually).
      */
-    Graphic.prototype.renderer = function (opts, where) {
+    Graphic.prototype.renderer = function (where, opts) {
         var w  = opts.width;
         var h  = opts.height;
         var pX = opts.paddingX || opts.padding;
         var pY = opts.paddingY || opts.padding;
-        this.setXYRanges(w, h, pX, pY);
 
         function render (data) {
             var svg = where.append('svg').attr('width', w).attr('height', h);
-            // FIXME: the Graphic's prepare should prepare the
-            // underlying facets which each know if they have
-            // subfacets that need to be prepared on a subset of the
-            // data.
-            this.prepare(data);
-            this.facets.render(w, h, pX, pY, svg, data);
+            this.facet.render(0, 0, w, h, pX, pY, svg, data);
+            /*
+              var p = 12;
+              this.facet.render(0, 0, w/2, h/2, p, p, svg, data);
+              this.facet.render(w/2, 0, w/2, h/2, p, p, svg, data);
+              this.facet.render(0, h/2, w/2, h/2, p, p, svg, data);
+              this.facet.render(w/2, h/2, w/2, h/2, p, p, svg, data);
+            */
+
         }
 
         return _.bind(render, this);
-    };
-
-    /*
-     * Once we know the graphical parameters, set the ranges of the X
-     * and Y scales appropriately.
-     */
-    Graphic.prototype.setXYRanges = function (width, height, paddingX, paddingY) {
-        this.scales['x'].range([paddingX, width - paddingX]);
-        this.scales['y'].range([height - paddingY, paddingY]);
-    };
-
-    Graphic.prototype.legend = function (aesthetic) {
-        return this.scales[aesthetic].legend || this.layers[0].legend(aesthetic);
     };
 
     function aesthetics (layers) {
@@ -88,11 +59,14 @@
 
 
     ////////////////////////////////////////////////////////////////////////
-    // Facets -- every graphic has at least one facet. (The simple
-    // case is one trivial facet that renders the whole graphic.) The
-    // Facet object knows how to split up the data into groups that
-    // will each be rendered into a separate facet, and how to split
-    // up the area of the graphic appropriately. There are five
+    // Facet -- Responsible for rendering into some rectangular area
+    // of the graphic. A facet can contain sub-facets, each
+    // responsible for rendering some subset of the data to some
+    // rectangle of the graphic.
+    //
+    // The Facet object knows how to split up the data into groups
+    // that will each be rendered into a separate facet, and how to
+    // split up the area of the graphic appropriately. There are five
     // layouts: horizontal, vertical, and horizontal flow, vertical
     // flow, and grid. The horizontal layout divides the graphic into
     // evenly sized elements that are arranged in a single row;
@@ -101,66 +75,96 @@
     // actually implemented yet except the trivial single facet case.
     // -Peter)
 
-    var Facets = {
-        fromSpec: function (spec, graphic) {
-            if (spec === undefined) {
-                return new SingleFacet(graphic);
-            } else {
-                throw 'Other facets not yet implemented.';
-            }
-        }
-    };
+    function Facet(layers, scales) {
+        this.layers    = layers;
+        this.scales    = scales;
+        this.subfacets = [];
+        _.each(layers, function (l) { l.facet = this; }, this);
+    }
 
-    // Used when the whole graphic is renderered in a single facet.
-    function SingleFacet (graphic) { this.graphic = graphic; };
-
-    SingleFacet.prototype.render = function (width, height, paddingX, paddingY, svg, data) {
+    Facet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
+        this.setXYRanges(width, height, paddingX, paddingY);
+        this.prepare(data);
 
         svg.append('rect')
             .attr('class', 'base')
-            .attr('x', 0)
-            .attr('y', 0)
+            .attr('x', x)
+            .attr('y', y)
             .attr('width', width)
             .attr('height', height);
 
         var xAxis = d3.svg.axis()
-            .scale(this.graphic.scales['x'].d3Scale)
+            .scale(this.scales['x'].d3Scale)
             .tickSize(2 * paddingY - height)
             .orient('bottom');
 
         var yAxis = d3.svg.axis()
-            .scale(this.graphic.scales['y'].d3Scale)
+            .scale(this.scales['y'].d3Scale)
             .tickSize(2 * paddingX - width)
             .orient('left');
 
         svg.append('g')
             .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (height - paddingY) + ')')
+            .attr('transform', 'translate(' + x + ',' + (y + height - paddingY) + ')')
             .call(xAxis);
 
         svg.append('g')
             .attr('class', 'y axis')
-            .attr('transform', 'translate(' + paddingX + ',0)')
+            .attr('transform', 'translate(' + (x + paddingX) + ',' + y + ')')
             .call(yAxis);
 
         svg.append('g')
             .attr('class', 'x legend')
-            .attr('transform', 'translate(' + (width / 2) + ',' + (height - 5) + ')')
+            .attr('transform', 'translate(' + (x + (width / 2)) + ',' + (y + (height - 5)) + ')')
             .append('text')
-            .text(this.graphic.legend('x'))
+            .text(this.legend('x'))
             .attr('text-anchor', 'middle');
 
         svg.append('g')
             .attr('class', 'y legend')
-            .attr('transform', 'translate(' + 10 + ',' + (height / 2) + ') rotate(270)')
+            .attr('transform', 'translate(' + (x + 10) + ',' + (y + (height / 2)) + ') rotate(270)')
             .append('text')
-            .text(this.graphic.legend('y'))
+            .text(this.legend('y'))
             .attr('text-anchor', 'middle');
 
-        _.each(
-            this.graphic.layers,
-            function (layer) { layer.render(svg.append('g')); },
-            this);
+        function g () {
+            return svg.append('g').attr('transform', 'translate(' + x + ',' + y + ')');
+        }
+
+        _.each(this.layers, function (l) { l.render(g()); }, this);
+        _.each(this.subfacets, function (s) { s.render(); }, this);
+    };
+
+
+    /*
+     * Once we know the graphical parameters, set the ranges of the X
+     * and Y scales appropriately.
+     */
+    Facet.prototype.setXYRanges = function (width, height, paddingX, paddingY) {
+        this.scales['x'].range([paddingX, width - paddingX]);
+        this.scales['y'].range([height - paddingY, paddingY]);
+    };
+
+    /*
+     * Prepare the layers and scales to render a specific data set.
+     */
+    Facet.prototype.prepare = function (data) {
+
+        function values (a) {
+            function hasAesthetic (layer) { return (a in layer.mappings); }
+            function vals (layer) {
+                function v (d) { return layer.dataValues(d, a); }
+                return _.flatten(_.map(layer.statistic.compute(data), v));
+            }
+            return _.uniq(_.flatten(_.map(_.filter(this.layers, hasAesthetic), vals)));
+        }
+
+        _.each(this.layers, function (e) { e.prepare(data); });
+        _.each(this.scales, function (s) { s.prepare(_.bind(values, this)); }, this);
+    };
+
+    Facet.prototype.legend = function (aesthetic) {
+        return this.scales[aesthetic].legend || this.layers[0].legend(aesthetic);
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -170,10 +174,10 @@
     // to aesthetics. It uses the graphics to get at the scales for
     // the different aesthetics.
 
-    function Layer (spec, graphic) {
+    function Layer (spec) {
         this.geometry  = Geometry.fromSpec(spec, this);
         this.statistic = Statistic.fromSpec(spec.statistic);
-        this.graphic   = graphic;
+        this.facet     = undefined;
         this.mappings  = spec.mapping !== undefined ? spec.mapping : {};
     }
 
@@ -209,11 +213,11 @@
      * the appropriate scale for the aesthetic.
      */
     Layer.prototype.scale = function (v, aesthetic) {
-        return this.graphic.scales[aesthetic].scale(v);
+        return this.facet.scales[aesthetic].scale(v);
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
-        var s = this.graphic.scales[aesthetic];
+        var s = this.facet.scales[aesthetic];
         return s.scale(s.min);
     };
 

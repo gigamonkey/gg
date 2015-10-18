@@ -23,7 +23,7 @@ line.boxplot {
     stroke-width: 1px;
 }
 
-div#examples span { margin: 3px; }
+div#examples svg { margin: 3px; }
 
 .axis {
   shape-rendering: crispEdges;
