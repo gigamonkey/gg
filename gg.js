@@ -19,18 +19,6 @@
         this.facets = Facets.fromSpec(spec.facets, this);
     }
 
-    function aesthetics (layers) {
-        return _.uniq(_.flatten(_.map(layers, function (l) { return l.aesthetics(); })));
-    }
-
-    function makeScales (scales, aesthetics) {
-        var scaleSpecs = _.object(_.map(scales, function (s) { return [ s.aesthetic, s ] }));
-        function makeScale (a) {
-            return a in scaleSpecs ? Scale.fromSpec(scaleSpecs[a]) : Scale.defaultFor(a)
-        }
-        return _.object(_.map(aesthetics, function (a) { return [ a, makeScale(a) ]; }));
-    };
-
     /*
      * Once we know the graphical parameters, set the ranges of the X
      * and Y scales appropriately.
@@ -44,23 +32,18 @@
      * Prepare the layers and scales to render a specific data set.
      */
     Graphic.prototype.prepare = function (data) {
-        _.each(this.layers, function (e) { e.prepare(data); });
-        _.each(this.scales, function (s) { s.prepare(data, this); }, this);
-    };
 
-    Graphic.prototype.valuesForAesthetic = function (data, aesthetic) {
-        var layers = this.layersWithAesthetic(aesthetic);
-        function vals (layer) {
-            function v (d) { return layer.dataValues(d, aesthetic); }
-            var computed = layer.statistic.compute(data);
-            return _.flatten(_.map(computed, v));
+        function values (a) {
+            function hasAesthetic (layer) { return (a in layer.mappings); }
+            function vals (layer) {
+                function v (d) { return layer.dataValues(d, a); }
+                return _.flatten(_.map(layer.statistic.compute(data), v));
+            }
+            return _.uniq(_.flatten(_.map(_.filter(this.layers, hasAesthetic), vals)));
         }
-        return _.uniq(_.flatten(_.map(layers, vals)));
-    };
 
-    Graphic.prototype.layersWithAesthetic = function (aesthetic) {
-        function hasAesthetic (layer) { return (aesthetic in layer.mappings); }
-        return _.filter(this.layers, hasAesthetic);
+        _.each(this.layers, function (e) { e.prepare(data); });
+        _.each(this.scales, function (s) { s.prepare(_.bind(values, this)); }, this);
     };
 
     /*
@@ -76,6 +59,7 @@
 
         function render (data) {
             var svg = where.append('svg').attr('width', w).attr('height', h);
+            this.prepare(data);
             this.facets.render(w, h, pX, pY, svg, data);
         }
 
@@ -84,6 +68,18 @@
 
     Graphic.prototype.legend = function (aesthetic) {
         return this.scales[aesthetic].legend || this.layers[0].legend(aesthetic);
+    };
+
+    function aesthetics (layers) {
+        return _.uniq(_.flatten(_.map(layers, function (l) { return l.aesthetics(); })));
+    }
+
+    function makeScales (scales, aesthetics) {
+        var scaleSpecs = _.object(_.map(scales, function (s) { return [ s.aesthetic, s ] }));
+        function makeScale (a) {
+            return a in scaleSpecs ? Scale.fromSpec(scaleSpecs[a]) : Scale.defaultFor(a)
+        }
+        return _.object(_.map(aesthetics, function (a) { return [ a, makeScale(a) ]; }));
     };
 
 
@@ -117,54 +113,44 @@
     };
 
     SingleFacet.prototype.render = function (width, height, paddingX, paddingY, svg, data) {
-        this.width    = width;
-        this.height   = height;
-        this.paddingX = paddingX;
-        this.paddingY = paddingY;
 
         svg.append('rect')
             .attr('class', 'base')
             .attr('x', 0)
             .attr('y', 0)
-            .attr('width', this.width)
-            .attr('height', this.height);
-
-        // FIXME: this is hinky. Probably the layers should belong to
-        // the facet since a layer only renders into a single facet
-        // (true?) The scales may belong to the facet or an enclosing
-        // facet.
-        this.graphic.prepare(data);
+            .attr('width', width)
+            .attr('height', height);
 
         var xAxis = d3.svg.axis()
             .scale(this.graphic.scales['x'].d3Scale)
-            .tickSize(2*this.paddingY - this.height)
+            .tickSize(2 * paddingY - height)
             .orient('bottom');
 
         var yAxis = d3.svg.axis()
             .scale(this.graphic.scales['y'].d3Scale)
-            .tickSize(2*this.paddingX - this.width)
+            .tickSize(2 * paddingX - width)
             .orient('left');
 
         svg.append('g')
             .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (this.height - this.paddingY) + ')')
+            .attr('transform', 'translate(0,' + (height - paddingY) + ')')
             .call(xAxis);
 
         svg.append('g')
             .attr('class', 'y axis')
-            .attr('transform', 'translate(' + this.paddingX + ',0)')
+            .attr('transform', 'translate(' + paddingX + ',0)')
             .call(yAxis);
 
         svg.append('g')
             .attr('class', 'x legend')
-            .attr('transform', 'translate(' + (this.width / 2) + ',' + (this.height - 5) + ')')
+            .attr('transform', 'translate(' + (width / 2) + ',' + (height - 5) + ')')
             .append('text')
             .text(this.graphic.legend('x'))
             .attr('text-anchor', 'middle');
 
         svg.append('g')
             .attr('class', 'y legend')
-            .attr('transform', 'translate(' + 10 + ',' + (this.height /2) + ') rotate(270)')
+            .attr('transform', 'translate(' + 10 + ',' + (height /2) + ') rotate(270)')
             .append('text')
             .text(this.graphic.legend('y'))
             .attr('text-anchor', 'middle');
@@ -655,9 +641,9 @@
         return s;
     };
 
-    Scale.prototype.prepare = function (data, graphic) {
+    Scale.prototype.prepare = function (values) {
         if (!this.domainSet) {
-            this.defaultDomain(graphic.valuesForAesthetic(data, this.aesthetic))
+            this.defaultDomain(values(this.aesthetic));
         }
     };
 
