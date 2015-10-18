@@ -105,36 +105,37 @@
 
         svg.append('g')
             .attr('class', 'x axis')
-            .attr('transform', 'translate(' + x + ',' + (y + height - paddingY) + ')')
+            .attr('transform', translate(x, y + height - paddingY))
             .call(xAxis);
 
         svg.append('g')
             .attr('class', 'y axis')
-            .attr('transform', 'translate(' + (x + paddingX) + ',' + y + ')')
+            .attr('transform', translate(x + paddingX, y))
             .call(yAxis);
 
         svg.append('g')
             .attr('class', 'x legend')
-            .attr('transform', 'translate(' + (x + (width / 2)) + ',' + (y + (height - 5)) + ')')
+            .attr('transform', translate(x + (width / 2), y + (height - 5)))
             .append('text')
             .text(this.legend('x'))
             .attr('text-anchor', 'middle');
 
         svg.append('g')
             .attr('class', 'y legend')
-            .attr('transform', 'translate(' + (x + 10) + ',' + (y + (height / 2)) + ') rotate(270)')
+            .attr('transform', translate(x + 10, y + (height / 2)) + ' rotate(270)')
             .append('text')
             .text(this.legend('y'))
             .attr('text-anchor', 'middle');
 
         function g () {
-            return svg.append('g').attr('transform', 'translate(' + x + ',' + y + ')');
+            return svg.append('g').attr('transform', translate(x, y));
         }
 
         _.each(this.layers, function (l) { l.render(g()); }, this);
         _.each(this.subfacets, function (s) { s.render(); }, this);
     };
 
+    function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
 
     /*
      * Once we know the graphical parameters, set the ranges of the X
