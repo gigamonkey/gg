@@ -171,7 +171,7 @@
     // the different aesthetics.
 
     function Layer (spec, scales) {
-        this.geometry  = Geometry.fromSpec(spec, this);
+        this.geometry  = Geometry.fromSpec(spec);
         this.statistic = Statistic.fromSpec(spec.statistic);
         this.scales    = scales;
         this.mappings  = spec.mapping !== undefined ? spec.mapping : {};
@@ -235,7 +235,7 @@
 
     Layer.prototype.render = function (g, data) {
         var s = this.statistic.compute(data)
-        this.geometry.render(g, _.values(groupData(s, this.mappings.group)));
+        this.geometry.render(g, _.values(groupData(s, this.mappings.group)), this);
     };
 
     Layer.prototype.legend = function (aesthetic) {
@@ -249,8 +249,8 @@
 
     function Geometry () {}
 
-    Geometry.fromSpec = function (spec, layer) {
-        var g = new ({
+    Geometry.fromSpec = function (spec) {
+        return new ({
             point:    PointGeometry,
             line:     LineGeometry,
             area:     AreaGeometry,
@@ -259,8 +259,6 @@
             arrow:    ArrowGeometry,
             text:     TextGeometry
         }[spec.geometry || 'point'])(spec);
-        g.layer = layer;
-        return g;
     };
 
     Geometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
@@ -275,8 +273,7 @@
 
     PointGeometry.prototype = new Geometry();
 
-    PointGeometry.prototype.render = function (g, data) {
-        var layer = this.layer;
+    PointGeometry.prototype.render = function (g, data, layer) {
         if (this.name) g = g.attr('class', this.name);
         groups(g, 'circles', data).selectAll('circle')
             .data(Object)
@@ -307,9 +304,7 @@
             : _.map(['y0', 'y1'], function (x) { return layer.dataValue(datum, x); })
     }
 
-    AreaGeometry.prototype.render = function (g, data) {
-        var layer = this.layer;
-
+    AreaGeometry.prototype.render = function (g, data, layer) {
         var area = d3.svg.area()
             .x(function (d) { return layer.aestheticValue(d, 'x') })
             .y1(function (d) { return layer.aestheticValue(d, 'y', 'y1') })
@@ -344,9 +339,7 @@
      */
     LineGeometry.prototype = new Geometry();
 
-    LineGeometry.prototype.render = function (g, data) {
-        var layer = this.layer;
-
+    LineGeometry.prototype.render = function (g, data, layer) {
         function scale (d, aesthetic) { return layer.aestheticValue(d, aesthetic); }
 
         // Can't use attributeValue here like the other geometries
@@ -382,8 +375,7 @@
 
     IntervalGeometry.prototype = new Geometry();
 
-    IntervalGeometry.prototype.render = function (g, data) {
-        var layer = this.layer;
+    IntervalGeometry.prototype.render = function (g, data, layer) {
         var width = this.width;
 
         function scale (d, aesthetic) { return layer.aestheticValue(d, aesthetic); }
@@ -412,9 +404,8 @@
             : _.values(_.omit(datum, ['group', 'outliers'])).concat(datum.outliers);
     }
 
-    BoxPlotGeometry.prototype.render = function (g, data) {
+    BoxPlotGeometry.prototype.render = function (g, data, layer) {
         // Data points are { group, median, q1, q3, upper, lower, outliers }
-        var layer = this.layer;
         var width = this.width;
 
         function iqrBox(s) {
@@ -494,8 +485,7 @@
 
     ArrowGeometry.prototype = new Geometry();
 
-    ArrowGeometry.prototype.render = function (g, data) {
-        var layer     = this.layer;
+    ArrowGeometry.prototype.render = function (g, data, layer) {
         var len       = this.arrowLength;
         var width     = this.arrowWidth;
         var color     = this.color;
@@ -569,8 +559,7 @@
 
     TextGeometry.prototype = new Geometry();
 
-    TextGeometry.prototype.render = function (g, data) {
-        var layer = this.layer;
+    TextGeometry.prototype.render = function (g, data, layer) {
         var text = this.text;
 
         function formatter (d) {
