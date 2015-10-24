@@ -614,17 +614,9 @@
 
     function Scale () {}
 
-    Scale.defaultTypes = {
-        x:     'linear',
-        y:     'linear',
-        y0:    'linear',
-        y1:    'linear',
-        color: 'color',
-        fill:  'color',
-        size:  'linear',
-    };
-
     Scale.fromSpec = function (spec) {
+
+        var nonLinearAesthetics = { color: 'color', fill:  'color' };
 
         var s = new ({
             linear:      LinearScale,
@@ -632,7 +624,7 @@
             log:         LogScale,
             categorical: CategoricalScale,
             color:       ColorScale
-        }[spec.type || (spec.aesthetic in Scale.defaultTypes ? Scale.defaultTypes[spec.aesthetic] : 'linear')])();
+        }[spec.type || nonLinearAesthetics[spec.aesthetic] || 'linear'])();
 
         spec.aesthetic !== undefined && (s.aesthetic = spec.aesthetic);
         spec.values    !== undefined && (s.values = spec.values);
