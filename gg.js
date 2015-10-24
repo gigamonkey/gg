@@ -131,7 +131,7 @@
             return svg.append('g').attr('transform', translate(x, y));
         }
 
-        _.each(this.layers, function (l) { l.render(g()); }, this);
+        _.each(this.layers, function (l) { l.render(g(), data); }, this);
         _.each(this.subfacets, function (s) { s.render(); }, this);
     };
 
@@ -160,7 +160,6 @@
             return _.uniq(_.flatten(_.map(_.filter(this.layers, hasAesthetic), vals)));
         }
 
-        _.each(this.layers, function (e) { e.prepare(data); });
         _.each(this.scales, function (s) { s.prepare(_.bind(values, this)); }, this);
     };
 
@@ -238,13 +237,9 @@
         return _.without(_.keys(this.mappings), 'group');
     };
 
-    Layer.prototype.prepare = function (data) {
-        this.newData = this.statistic.compute(data);
-        this.newData = _.values(groupData(this.newData, this.mappings.group));
-    };
-
-    Layer.prototype.render = function (g) {
-        this.geometry.render(g, this.newData);
+    Layer.prototype.render = function (g, data) {
+        var s = this.statistic.compute(data)
+        this.geometry.render(g, _.values(groupData(s, this.mappings.group)));
     };
 
     Layer.prototype.legend = function (aesthetic) {
@@ -913,7 +908,7 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
-    exports.gg = function g () {
+    exports.gg = function gg () {
         var graphic = new Graphic({
             layers: _.filter(arguments, function (x) { return _.has(x, 'geometry'); }),
             scales: _.filter(arguments, function (x) { return _.has(x, 'aesthetic'); })
