@@ -14,8 +14,9 @@
     // statistical graphic.
 
     function Graphic (spec) {
-        var scales = makeScales(spec.scales, aesthetics(spec.layers));
-        var layers = _.map(spec.layers, function (s) { return new Layer(s, scales); }, this);
+        var aesthetics = _.uniq(_.flatten(_.map(_.pluck(spec.layers, 'mapping'), _.keys)));
+        var scales     = makeScales(spec.scales, aesthetics);
+        var layers     = _.map(spec.layers, function (s) { return new Layer(s, scales); }, this);
         this.facet = new Facet(layers, scales);
     }
 
@@ -44,10 +45,6 @@
 
         return _.bind(render, this);
     };
-
-    function aesthetics (layerSpecs) {
-        return _.uniq(_.flatten(_.map(_.pluck(layerSpecs, 'mapping'), _.keys)));
-    }
 
     function makeScales (scales, aesthetics) {
         var scaleSpecs = _.object(_.map(scales, function (s) { return [ s.aesthetic, s ] }));
