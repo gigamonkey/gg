@@ -17,31 +17,24 @@
         return _.max(data, function (d) { return d.y; });
     }
 
-    function spec(label) {
-        return {
-            layers: [
-                { geometry: 'line', mapping: { x: 'x', y: 'y' }, smooth: true, width: 2, color: '#338'},
-                {
-                    geometry: 'arrow',
-                    color: '#338',
-                    mapping: { x: 'x', y: 'y' },
-                    linewidth: 1,
-                    arrow: {
-                        length: 10,
-                        width: 3,
-                    },
-                    statistic: {
-                        kind: 'arrow',
-                        head: function (d) { return maxY(d); },
-                        tail: function (d) { return { x: maxY(d).x, y: 0 }; }
-                    }
+    function plotter(label) {
+        return gg(
+            { geometry: 'line', mapping: { x: 'x', y: 'y' }, smooth: true, width: 2, color: '#338'},
+            {
+                geometry: 'arrow',
+                color: '#338',
+                mapping: { x: 'x', y: 'y' },
+                linewidth: 1,
+                arrow: { length: 10, width: 3 },
+                statistic: {
+                    kind: 'arrow',
+                    head: function (d) { return maxY(d); },
+                    tail: function (d) { return { x: maxY(d).x, y: 0 }; }
                 }
-            ],
-            scales: [
-                { aesthetic: 'x', legend: label },
-                { aesthetic: 'y', legend: 'Net productivity' },
-            ],
-        };
+            },
+            { aesthetic: 'x', legend: label },
+            { aesthetic: 'y', legend: 'Net productivity' }
+        )
     }
 
     var opts = { width: 500, height: 300, padding: 50 };
@@ -50,7 +43,7 @@
 
     _.map([10, 100, 1000, 10000], function (n) {
         var label = 'EE Engineers out of ' + commify(n) + ' (s = ' + s + '; b = ' + b + ')';
-        gg(spec(label)).renderer(d3.select('#chart' + n), opts)(data(n));
+        plotter(label)(data(n), d3.select('#chart' + n), opts);
     });
 
 }();

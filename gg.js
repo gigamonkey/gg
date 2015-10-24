@@ -14,7 +14,6 @@
     // statistical graphic.
 
     function Graphic (spec) {
-        this.name = spec.name;
         var layers = _.map(spec.layers, function (s) { return new Layer(s); }, this);
         var scales = makeScales(spec.scales, aesthetics(layers));
         this.facet = new Facet(layers, scales);
@@ -32,7 +31,6 @@
 
         function render (data) {
             var svg = where.append('svg').attr('width', w).attr('height', h);
-            if (this.name) svg.attr('class', this.name);
             this.facet.render(0, 0, w, h, pX, pY, svg, data);
             /*
               var p = 12;
@@ -279,15 +277,16 @@
     };
 
     function PointGeometry (spec) {
+        this.name = spec.name;
         this.size  = spec.size || 5;
         this.color = spec.color || 'black';
     }
-
 
     PointGeometry.prototype = new Geometry();
 
     PointGeometry.prototype.render = function (g, data) {
         var layer = this.layer;
+        if (this.name) g = g.attr('class', this.name);
         groups(g, 'circles', data).selectAll('circle')
             .data(Object)
             .enter()
@@ -499,7 +498,7 @@
     function ArrowGeometry (spec) {
         this.arrowLength = spec.arrow.length || 10;
         this.arrowWidth  = spec.arrow.width || 3;
-        this.color = spec.color || 'black';
+        this.color       = spec.color || 'black';
     }
 
     ArrowGeometry.prototype = new Geometry();
@@ -914,6 +913,14 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
-    exports.gg = function gg (spec) { return new Graphic(spec); }
+    exports.gg = function g () {
+        var graphic = new Graphic({
+            layers: _.filter(arguments, function (x) { return _.has(x, 'geometry'); }),
+            scales: _.filter(arguments, function (x) { return _.has(x, 'aesthetic'); })
+        });
+        return function (data, where, opts) {
+            graphic.renderer(where, opts)(data);
+        };
+    };
 
 })(this);
