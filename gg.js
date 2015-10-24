@@ -14,8 +14,8 @@
     // statistical graphic.
 
     function Graphic (spec) {
-        var layers = _.map(spec.layers, function (s) { return new Layer(s); }, this);
-        var scales = makeScales(spec.scales, aesthetics(layers));
+        var scales = makeScales(spec.scales, aesthetics(spec.layers));
+        var layers = _.map(spec.layers, function (s) { return new Layer(s, scales); }, this);
         this.facet = new Facet(layers, scales);
     }
 
@@ -45,8 +45,8 @@
         return _.bind(render, this);
     };
 
-    function aesthetics (layers) {
-        return _.uniq(_.flatten(_.map(layers, function (l) { return l.aesthetics(); })));
+    function aesthetics (layerSpecs) {
+        return _.uniq(_.flatten(_.map(_.pluck(layerSpecs, 'mapping'), _.keys)));
     }
 
     function makeScales (scales, aesthetics) {
@@ -79,7 +79,6 @@
         this.layers    = layers;
         this.scales    = scales;
         this.subfacets = [];
-        _.each(layers, function (l) { l.facet = this; }, this);
     }
 
     Facet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
@@ -174,10 +173,10 @@
     // to aesthetics. It uses the graphics to get at the scales for
     // the different aesthetics.
 
-    function Layer (spec) {
+    function Layer (spec, scales) {
         this.geometry  = Geometry.fromSpec(spec, this);
         this.statistic = Statistic.fromSpec(spec.statistic);
-        this.facet     = undefined;
+        this.scales    = scales;
         this.mappings  = spec.mapping !== undefined ? spec.mapping : {};
     }
 
@@ -225,11 +224,11 @@
      * the appropriate scale for the aesthetic.
      */
     Layer.prototype.scale = function (v, aesthetic) {
-        return this.facet.scales[aesthetic].scale(v);
+        return this.scales[aesthetic].scale(v);
     };
 
     Layer.prototype.scaledMin = function (aesthetic) {
-        var s = this.facet.scales[aesthetic];
+        var s = this.scales[aesthetic];
         return s.scale(s.min);
     };
 
