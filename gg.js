@@ -127,7 +127,7 @@
             return svg.append('g').attr('transform', translate(x, y));
         }
 
-        _.each(this.layers, function (l) { l.render(g(), data); }, this);
+        _.each(this.layers, function (l) { l.render(g(), data, this.scales); }, this);
         _.each(this.subfacets, function (s) { s.render(); }, this);
     };
 
@@ -173,7 +173,6 @@
     function Layer (spec, scales) {
         this.geometry  = Geometry.fromSpec(spec);
         this.statistic = Statistic.fromSpec(spec.statistic);
-        this.scales    = scales;
         this.mappings  = spec.mapping !== undefined ? spec.mapping : {};
     }
 
@@ -183,8 +182,8 @@
      * 'foo', extract the 'foo' field from d) and then scales it using
      * the appropriate scale for the aesthetic.
      */
-    Layer.prototype.aestheticValue = function (d, aesthetic, mapKey) {
-        return this.scale(this.dataValue(d, mapKey || aesthetic), aesthetic);
+    Layer.prototype.aestheticValue = function (scales, d, aesthetic, mapKey) {
+        return this.scale(this.dataValue(d, mapKey || aesthetic), aesthetic, scales);
     };
 
     /**
@@ -193,11 +192,10 @@
      * the a datum and map it to the aesthetic value. Otherwise return
      * the default value.
      */
-    Layer.prototype.attributeValue = function (aesthetic, defaultValue) {
+    Layer.prototype.attributeValue = function (scales, aesthetic, defaultValue) {
         return (aesthetic in this.mappings) ?
-            _.bind(function (d) { return this.aestheticValue(d, aesthetic); }, this) : defaultValue;
+            _.bind(function (d) { return this.aestheticValue(scales, d, aesthetic); }, this) : defaultValue;
     }
-
 
     /**
      * Extract the field from the datum corresponding to the given
@@ -220,12 +218,12 @@
      * Given a value in data space and an aesthetic, scale it using
      * the appropriate scale for the aesthetic.
      */
-    Layer.prototype.scale = function (v, aesthetic) {
-        return this.scales[aesthetic].scale(v);
+    Layer.prototype.scale = function (v, aesthetic, scales) {
+        return scales[aesthetic].scale(v);
     };
 
-    Layer.prototype.scaledMin = function (aesthetic) {
-        var s = this.scales[aesthetic];
+    Layer.prototype.scaledMin = function (aesthetic, scales) {
+        var s = scales[aesthetic];
         return s.scale(s.min);
     };
 
@@ -233,9 +231,9 @@
         return _.without(_.keys(this.mappings), 'group');
     };
 
-    Layer.prototype.render = function (g, data) {
+    Layer.prototype.render = function (g, data, scales) {
         var s = this.statistic.compute(data)
-        this.geometry.render(g, _.values(groupData(s, this.mappings.group)), this);
+        this.geometry.render(g, _.values(groupData(s, this.mappings.group)), this, scales);
     };
 
     Layer.prototype.legend = function (aesthetic) {
@@ -273,18 +271,18 @@
 
     PointGeometry.prototype = new Geometry();
 
-    PointGeometry.prototype.render = function (g, data, layer) {
+    PointGeometry.prototype.render = function (g, data, layer, scales) {
         if (this.name) g = g.attr('class', this.name);
         groups(g, 'circles', data).selectAll('circle')
             .data(Object)
             .enter()
             .append('circle')
             .attr('class', 'points')
-            .attr('cx', function (d) { return layer.aestheticValue(d, 'x'); })
-            .attr('cy', function (d) { return layer.aestheticValue(d, 'y'); })
+            .attr('cx', function (d) { return layer.aestheticValue(scales, d, 'x'); })
+            .attr('cy', function (d) { return layer.aestheticValue(scales, d, 'y'); })
             .attr('fill-opacity', 1)
-            .attr('fill', layer.attributeValue('color', this.color))
-            .attr('r', layer.attributeValue('size', this.size));
+            .attr('fill', layer.attributeValue(scales, 'color', this.color))
+            .attr('r', layer.attributeValue(scales, 'size', this.size));
     };
 
     function AreaGeometry (spec) {
@@ -304,11 +302,11 @@
             : _.map(['y0', 'y1'], function (x) { return layer.dataValue(datum, x); })
     }
 
-    AreaGeometry.prototype.render = function (g, data, layer) {
+    AreaGeometry.prototype.render = function (g, data, layer, scales) {
         var area = d3.svg.area()
-            .x(function (d) { return layer.aestheticValue(d, 'x') })
-            .y1(function (d) { return layer.aestheticValue(d, 'y', 'y1') })
-            .y0(function (d) { return layer.aestheticValue(d, 'y', 'y0') })
+            .x(function (d) { return layer.aestheticValue(scales, d, 'x') })
+            .y1(function (d) { return layer.aestheticValue(scales, d, 'y', 'y1') })
+            .y0(function (d) { return layer.aestheticValue(scales, d, 'y', 'y0') })
             .interpolate(this.smooth ? 'basis' : 'linear');
 
         groups(g, 'lines', data).selectAll('polyline')
@@ -339,8 +337,8 @@
      */
     LineGeometry.prototype = new Geometry();
 
-    LineGeometry.prototype.render = function (g, data, layer) {
-        function scale (d, aesthetic) { return layer.aestheticValue(d, aesthetic); }
+    LineGeometry.prototype.render = function (g, data, layer, scales) {
+        function scale (d, aesthetic) { return layer.aestheticValue(scales, d, aesthetic); }
 
         // Can't use attributeValue here like the other geometries
         // because we always group the data and then turn each group
@@ -375,10 +373,10 @@
 
     IntervalGeometry.prototype = new Geometry();
 
-    IntervalGeometry.prototype.render = function (g, data, layer) {
+    IntervalGeometry.prototype.render = function (g, data, layer, scales) {
         var width = this.width;
 
-        function scale (d, aesthetic) { return layer.aestheticValue(d, aesthetic); }
+        function scale (d, aesthetic) { return layer.aestheticValue(scales, d, aesthetic); }
 
         groups(g, 'rects', data).selectAll('rect')
             .data(Object)
@@ -387,8 +385,8 @@
             .attr('x', function (d) { return scale(d, 'x') - width/2; })
             .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)
-            .attr('height', function (d) { return layer.scaledMin('y') - scale(d, 'y'); })
-            .attr('fill', layer.attributeValue('color', this.color));
+            .attr('height', function (d) { return layer.scaledMin('y', scales) - scale(d, 'y'); })
+            .attr('fill', layer.attributeValue(scales, 'color', this.color));
     };
 
     function BoxPlotGeometry (spec) {
@@ -404,17 +402,19 @@
             : _.values(_.omit(datum, ['group', 'outliers'])).concat(datum.outliers);
     }
 
-    BoxPlotGeometry.prototype.render = function (g, data, layer) {
+    BoxPlotGeometry.prototype.render = function (g, data, layer, scales) {
         // Data points are { group, median, q1, q3, upper, lower, outliers }
         var width = this.width;
+
+        function scale (v, a) { return layer.scale(v, a, scales); }
 
         function iqrBox(s) {
             s.append('rect')
                 .attr('class', 'boxplot iqr')
-                .attr('x', function (d) { return layer.scale(d.group, 'x') - width/2; })
-                .attr('y', function (d) { return layer.scale(d.q3, 'y'); })
+                .attr('x', function (d) { return scale(d.group, 'x') - width/2; })
+                .attr('y', function (d) { return scale(d.q3, 'y'); })
                 .attr('width', width)
-                .attr('height', function (d) { return layer.scale(d.q1, 'y') - layer.scale(d.q3, 'y'); })
+                .attr('height', function (d) { return scale(d.q1, 'y') - scale(d.q3, 'y'); })
                 .attr('fill', 'none');
             s.call(medianLine);
         }
@@ -422,34 +422,34 @@
         function medianLine(s) {
             s.append('line')
                 .attr('class', 'boxplot median')
-                .attr('x1', function (d) { return layer.scale(d.group, 'x') - width/2; })
-                .attr('x2', function (d) { return layer.scale(d.group, 'x') + width/2; })
-                .attr('y1', function (d) { return layer.scale(d.median, 'y'); })
-                .attr('y2', function (d) { return layer.scale(d.median, 'y'); });
+                .attr('x1', function (d) { return scale(d.group, 'x') - width/2; })
+                .attr('x2', function (d) { return scale(d.group, 'x') + width/2; })
+                .attr('y1', function (d) { return scale(d.median, 'y'); })
+                .attr('y2', function (d) { return scale(d.median, 'y'); });
         }
 
         function whisker(s, y1, y2) {
             s.append('line')
                 .attr('class', 'boxplot whisker')
-                .attr('x1', function (d) { return layer.scale(d.group, 'x'); })
-                .attr('x2', function (d) { return layer.scale(d.group, 'x'); })
-                .attr('y1', function (d) { return layer.scale(d[y1], 'y'); })
-                .attr('y2', function (d) { return layer.scale(d[y2], 'y'); });
+                .attr('x1', function (d) { return scale(d.group, 'x'); })
+                .attr('x2', function (d) { return scale(d.group, 'x'); })
+                .attr('y1', function (d) { return scale(d[y1], 'y'); })
+                .attr('y2', function (d) { return scale(d[y2], 'y'); });
             s.call(whiskerTick, y2);
         }
 
         function whiskerTick(s, y) {
             s.append('line')
                 .attr('class', 'boxplot whisker')
-                .attr('x1', function (d) { return layer.scale(d.group, 'x') - (width * 0.4); })
-                .attr('x2', function (d) { return layer.scale(d.group, 'x') + (width * 0.4); })
-                .attr('y1', function (d) { return layer.scale(d[y], 'y'); })
-                .attr('y2', function (d) { return layer.scale(d[y], 'y'); });
+                .attr('x1', function (d) { return scale(d.group, 'x') - (width * 0.4); })
+                .attr('x2', function (d) { return scale(d.group, 'x') + (width * 0.4); })
+                .attr('y1', function (d) { return scale(d[y], 'y'); })
+                .attr('y2', function (d) { return scale(d[y], 'y'); });
         }
 
         function outliers(s) {
             s.selectAll('circle')
-                .data(function (d) { return _.map(d.outliers, function (o) { return { x: layer.scale(d.group, 'x'), y: layer.scale(o, 'y') }; }); })
+                .data(function (d) { return _.map(d.outliers, function (o) { return { x: scale(d.group, 'x'), y: scale(o, 'y') }; }); })
                 .enter()
                 .append('circle')
                 .attr('class', 'boxplot outlier')
@@ -462,8 +462,7 @@
             s.call(iqrBox).call(whisker, 'q3', 'upper').call(whisker, 'q1', 'lower').call(outliers);
         }
 
-        var color = ('color' in layer.mappings) ?
-            function(d) { return layer.scale(d, 'color'); } : this.color;
+        var color = ('color' in layer.mappings) ? function(d) { return scale(d, 'color'); } : this.color;
 
         g.selectAll('g.boxes')
             .data(data)
@@ -485,19 +484,20 @@
 
     ArrowGeometry.prototype = new Geometry();
 
-    ArrowGeometry.prototype.render = function (g, data, layer) {
+    ArrowGeometry.prototype.render = function (g, data, layer, scales) {
         var len       = this.arrowLength;
         var width     = this.arrowWidth;
         var color     = this.color;
         var linewidth = this.width;
 
+        function scale (v, a) { return layer.scale(v, a, scales); }
 
         function arrowline (s) {
             s.append('line')
-                .attr('x1', function (d) { return layer.scale(d.tail.x, 'x'); })
-                .attr('x2', function (d) { return layer.scale(d.head.x, 'x'); })
-                .attr('y1', function (d) { return layer.scale(d.tail.y, 'y'); })
-                .attr('y2', function (d) { return layer.scale(d.head.y, 'y'); })
+                .attr('x1', function (d) { return scale(d.tail.x, 'x'); })
+                .attr('x2', function (d) { return scale(d.head.x, 'x'); })
+                .attr('y1', function (d) { return scale(d.tail.y, 'y'); })
+                .attr('y2', function (d) { return scale(d.head.y, 'y'); })
                 .attr('fill', 'none')
                 .attr('stroke-width', linewidth)
                 .attr('stroke', color);
@@ -506,10 +506,10 @@
         function arrowhead (s) {
 
             function arrowheadPoints (d, length, width) {
-                var x1 = layer.scale(d.tail.x, 'x');
-                var y1 = layer.scale(d.tail.y, 'y');
-                var x2 = layer.scale(d.head.x, 'x');
-                var y2 = layer.scale(d.head.y, 'y');
+                var x1 = scale(d.tail.x, 'x');
+                var y1 = scale(d.tail.y, 'y');
+                var x2 = scale(d.head.x, 'x');
+                var y2 = scale(d.head.y, 'y');
 
                 var rise = y2 - y1;
                 var run  = x2 - x1;
@@ -559,7 +559,7 @@
 
     TextGeometry.prototype = new Geometry();
 
-    TextGeometry.prototype.render = function (g, data, layer) {
+    TextGeometry.prototype.render = function (g, data, layer, scales) {
         var text = this.text;
 
         function formatter (d) {
@@ -576,8 +576,8 @@
             .enter()
             .append('text')
             .attr('class', 'graphicText')
-            .attr('x', function (d) { return layer.aestheticValue(d, 'x'); })
-            .attr('y', function (d) { return layer.aestheticValue(d, 'y'); })
+            .attr('x', function (d) { return layer.aestheticValue(scales, d, 'x'); })
+            .attr('y', function (d) { return layer.aestheticValue(scales, d, 'y'); })
             .text(formatter);
 
         if ( this.show === 'hover' ){
