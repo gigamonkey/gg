@@ -63,10 +63,12 @@
         this.layers     = layers;
         this.scaleSpecs = scaleSpecs;
         this.aesthetics = aesthetics;
-        this.subfacets  = [];
     }
 
     Facet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
+
+        function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
+        function g () { return svg.append('g').attr('transform', translate(x, y)); }
 
         var scales = makeScales(this.scaleSpecs, this.layers, this.aesthetics, data, width, height, paddingX, paddingY);
 
@@ -111,15 +113,10 @@
             .text(this.legend(scales, 'y'))
             .attr('text-anchor', 'middle');
 
-        function g () {
-            return svg.append('g').attr('transform', translate(x, y));
-        }
 
         _.each(this.layers, function (l) { l.render(g(), data, scales); }, this);
-        _.each(this.subfacets, function (s) { s.render(); }, this);
     };
 
-    function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
 
     /*
      * Make the scales to render a specific data set.
@@ -162,8 +159,7 @@
     // Layers -- each layer is responsible for drawing one geometry
     // into the graphic to which the layer belongs. The layer is also
     // responsible for mapping data from the keys in the original data
-    // to aesthetics. It uses the graphics to get at the scales for
-    // the different aesthetics.
+    // to aesthetics.
 
     function Layer (spec) {
         this.geometry  = Geometry.fromSpec(spec);
@@ -591,10 +587,7 @@
 
     ////////////////////////////////////////////////////////////////////////
     // Scales -- a scale is used to map from data values to aesthetic
-    // values. Each layer maps certain variables or expressions to
-    // certain aesthetics (e.g. the data may contain 'height' and
-    // 'weight' which are mapped to the standard 'x' and 'y'
-    // aesthetics.)
+    // values.
 
     function Scale () {}
 
@@ -670,7 +663,7 @@
             this.d3Scale.domain(this.values);
         } else {
             // Otherwise, extracted from data.
-            values.sort(function (a,b) { return a - b; });
+            values.sort(function (a, b) { return a - b; });
             this.d3Scale.domain(values);
         }
         this.domainSet = true;
@@ -874,6 +867,11 @@
     ////////////////////////////////////////////////////////////////////////
     // API
 
+    /*
+     * Given a spec for a graphic, return a rendering function that
+     * can render the graphic given data, a DOM element in which to
+     * render it, and graphics options.
+     */
     exports.gg = function gg () {
         var graphic = new Graphic({
             layers: _.filter(arguments, function (x) { return _.has(x, 'geometry'); }),
