@@ -14,8 +14,8 @@
     // statistical graphic.
 
     function Graphic (spec) {
-        var aesthetics = _.uniq(_.flatten(_.map(_.pluck(spec.layers, 'mapping'), _.keys)));
         var layers     = _.map(spec.layers, function (s) { return new Layer(s); });
+        var aesthetics = _.uniq(_.flatten(_.map(_.pluck(layers, 'mappings'), _.keys)));
         this.facet = new Facet(layers, spec.scales, aesthetics);
     }
 
@@ -163,8 +163,20 @@
 
     function Layer (spec) {
         this.geometry  = Geometry.fromSpec(spec);
+        this.group     = spec.group
         this.statistic = Statistic.fromSpec(spec.statistic);
-        this.mappings  = spec.mapping !== undefined ? spec.mapping : {};
+        var m1  = spec.mapping !== undefined ? spec.mapping : {};
+        var m2 = {};
+        _.each(this.geometry.aesthetics, function (a) {
+            if (a in spec && !_.isNumber(spec[a])) { m2[a] = spec[a] }
+        }, this);
+        if (!_.isEqual(m1, m2)) {
+            console.log(spec);
+            console.log(m1);
+            console.log(m2);
+        }
+        this.mappings = m2;
+
     }
 
     /**
@@ -224,7 +236,7 @@
 
     Layer.prototype.render = function (g, data, scales) {
         var s = this.statistic.compute(data)
-        this.geometry.render(g, _.values(groupData(s, this.mappings.group)), this, scales);
+        this.geometry.render(g, _.values(groupData(s, this.group)), this, scales);
     };
 
     Layer.prototype.legend = function (aesthetic) {
@@ -236,7 +248,9 @@
     // They only care about scaled values which they can get from
     // their layer.
 
-    function Geometry () {}
+    function Geometry (aesthetics) {
+        this.aesthetics = aesthetics;
+    }
 
     Geometry.fromSpec = function (spec) {
         return new ({
@@ -260,7 +274,7 @@
         this.color = spec.color || 'black';
     }
 
-    PointGeometry.prototype = new Geometry();
+    PointGeometry.prototype = new Geometry(['x', 'y', 'size', 'color']);
 
     PointGeometry.prototype.render = function (g, data, layer, scales) {
         if (this.name) g = g.attr('class', this.name);
@@ -285,7 +299,7 @@
         this.smooth = spec.smooth || false;
     }
 
-    AreaGeometry.prototype =  new Geometry();
+    AreaGeometry.prototype =  new Geometry(['x', 'y', 'color', 'y0', 'y1']);
 
     AreaGeometry.prototype.valuesForAesthetic = function (datum, field, layer) {
         return field
@@ -326,7 +340,7 @@
      * lines path element are also given a class corresponding to the
      * name of the group so they can be styled with CSS.
      */
-    LineGeometry.prototype = new Geometry();
+    LineGeometry.prototype = new Geometry(['x', 'y', 'color']);
 
     LineGeometry.prototype.render = function (g, data, layer, scales) {
         function scale (d, aesthetic) { return layer.aestheticValue(scales, d, aesthetic); }
@@ -362,7 +376,7 @@
         this.color = spec.color || 'black';
     }
 
-    IntervalGeometry.prototype = new Geometry();
+    IntervalGeometry.prototype = new Geometry(['x', 'y', 'color']);
 
     IntervalGeometry.prototype.render = function (g, data, layer, scales) {
         var width = this.width;
@@ -385,7 +399,7 @@
         this.color = spec.color || 'black';
     }
 
-    BoxPlotGeometry.prototype = new Geometry();
+    BoxPlotGeometry.prototype = new Geometry(['x', 'y']);
 
     BoxPlotGeometry.prototype.valuesForAesthetic = function (datum, mapped, layer) {
         return mapped
@@ -473,7 +487,7 @@
         this.color       = spec.color || 'black';
     }
 
-    ArrowGeometry.prototype = new Geometry();
+    ArrowGeometry.prototype = new Geometry(['x', 'y']);
 
     ArrowGeometry.prototype.render = function (g, data, layer, scales) {
         var len       = this.arrowLength;
@@ -548,7 +562,7 @@
         this.show = spec.show;
     }
 
-    TextGeometry.prototype = new Geometry();
+    TextGeometry.prototype = new Geometry(['x', 'y', 'size', 'color']);
 
     TextGeometry.prototype.render = function (g, data, layer, scales) {
         var text = this.text;
@@ -722,7 +736,7 @@
                 count: bin.y,
                 density: density[i].y,
                 ncount: bin.y / data.length || 0
-                // Not clear to me how to impelment the ndensity metric
+                // Not clear to me how to implement the ndensity metric
                 //ndensity: null
             };
         });
