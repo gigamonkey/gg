@@ -15,9 +15,8 @@
 
     function Graphic (spec) {
         var aesthetics = _.uniq(_.flatten(_.map(_.pluck(spec.layers, 'mapping'), _.keys)));
-        var scales     = makeScales(spec.scales, aesthetics);
-        var layers     = _.map(spec.layers, function (s) { return new Layer(s, scales); }, this);
-        this.facet = new Facet(layers, scales);
+        var layers     = _.map(spec.layers, function (s) { return new Layer(s); });
+        this.facet = new Facet(layers, spec.scales, aesthetics);
     }
 
     /*
@@ -46,13 +45,6 @@
         return _.bind(render, this);
     };
 
-    function makeScales (scales, aesthetics) {
-        var scaleSpecs = _.object(_.map(scales, function (s) { return [ s.aesthetic, s ] }));
-        function makeScale (a) {
-            return a in scaleSpecs ? Scale.fromSpec(scaleSpecs[a]) : Scale.defaultFor(a)
-        }
-        return _.object(_.map(aesthetics, function (a) { return [ a, makeScale(a) ]; }));
-    };
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -72,15 +64,16 @@
     // actually implemented yet except the trivial single facet case.
     // -Peter)
 
-    function Facet(layers, scales) {
-        this.layers    = layers;
-        this.scales    = scales;
-        this.subfacets = [];
+    function Facet(layers, scaleSpecs, aesthetics) {
+        this.layers     = layers;
+        this.scaleSpecs = scaleSpecs;
+        this.aesthetics = aesthetics;
+        this.subfacets  = [];
     }
 
     Facet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
-        this.setXYRanges(width, height, paddingX, paddingY);
-        this.prepare(data);
+
+        var scales = makeScales(this.scaleSpecs, this.layers, this.aesthetics, data, width, height, paddingX, paddingY);
 
         svg.append('rect')
             .attr('class', 'base')
@@ -90,12 +83,12 @@
             .attr('height', height);
 
         var xAxis = d3.svg.axis()
-            .scale(this.scales['x'].d3Scale)
+            .scale(scales['x'].d3Scale)
             .tickSize(2 * paddingY - height)
             .orient('bottom');
 
         var yAxis = d3.svg.axis()
-            .scale(this.scales['y'].d3Scale)
+            .scale(scales['y'].d3Scale)
             .tickSize(2 * paddingX - width)
             .orient('left');
 
@@ -113,54 +106,61 @@
             .attr('class', 'x legend')
             .attr('transform', translate(x + (width / 2), y + (height - 5)))
             .append('text')
-            .text(this.legend('x'))
+            .text(this.legend(scales, 'x'))
             .attr('text-anchor', 'middle');
 
         svg.append('g')
             .attr('class', 'y legend')
             .attr('transform', translate(x + 10, y + (height / 2)) + ' rotate(270)')
             .append('text')
-            .text(this.legend('y'))
+            .text(this.legend(scales, 'y'))
             .attr('text-anchor', 'middle');
 
         function g () {
             return svg.append('g').attr('transform', translate(x, y));
         }
 
-        _.each(this.layers, function (l) { l.render(g(), data, this.scales); }, this);
+        _.each(this.layers, function (l) { l.render(g(), data, scales); }, this);
         _.each(this.subfacets, function (s) { s.render(); }, this);
     };
 
     function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
 
     /*
-     * Once we know the graphical parameters, set the ranges of the X
-     * and Y scales appropriately.
+     * Make the scales to render a specific data set.
      */
-    Facet.prototype.setXYRanges = function (width, height, paddingX, paddingY) {
-        this.scales['x'].range([paddingX, width - paddingX]);
-        this.scales['y'].range([height - paddingY, paddingY]);
-    };
+    function makeScales (specs, layers, aesthetics, data, width, height, paddingX, paddingY) {
 
-    /*
-     * Prepare the layers and scales to render a specific data set.
-     */
-    Facet.prototype.prepare = function (data) {
+        var scaleSpecs = _.object(_.map(specs, function (s) { return [ s.aesthetic, s ] }));
 
-        function values (a) {
-            function hasAesthetic (layer) { return (a in layer.mappings); }
+        // Get all possible values for aesthetic a.
+        function allValues (a) {
+            function hasAesthetic (layer) { return a in layer.mappings; }
             function vals (layer) {
                 function v (d) { return layer.dataValues(d, a); }
                 return _.flatten(_.map(layer.statistic.compute(data), v));
             }
-            return _.uniq(_.flatten(_.map(_.filter(this.layers, hasAesthetic), vals)));
+            return _.uniq(_.flatten(_.map(_.filter(layers, hasAesthetic), vals)));
         }
 
-        _.each(this.scales, function (s) { s.prepare(_.bind(values, this)); }, this);
+        function makeScale (a) {
+            var scale =  a in scaleSpecs ? Scale.fromSpec(scaleSpecs[a]) : Scale.defaultFor(a);
+            if (!scale.domainSet) {
+                scale.defaultDomain(allValues(a));
+            }
+            if (a === 'x') {
+                scale.range([paddingX, width - paddingX]);
+            } else if (a === 'y') {
+                scale.range([height - paddingY, paddingY]);
+            }
+            return [ a, scale ];
+        }
+
+        return _.object(_.map(aesthetics, makeScale));
     };
 
-    Facet.prototype.legend = function (aesthetic) {
-        return this.scales[aesthetic].legend || this.layers[0].legend(aesthetic);
+    Facet.prototype.legend = function (scales, aesthetic) {
+        return scales[aesthetic].legend || this.layers[0].legend(aesthetic);
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -170,7 +170,7 @@
     // to aesthetics. It uses the graphics to get at the scales for
     // the different aesthetics.
 
-    function Layer (spec, scales) {
+    function Layer (spec) {
         this.geometry  = Geometry.fromSpec(spec);
         this.statistic = Statistic.fromSpec(spec.statistic);
         this.mappings  = spec.mapping !== undefined ? spec.mapping : {};
@@ -627,12 +627,6 @@
 
     Scale.defaultFor = function (aesthetic) {
         return Scale.fromSpec({ aesthetic: aesthetic });
-    };
-
-    Scale.prototype.prepare = function (values) {
-        if (!this.domainSet) {
-            this.defaultDomain(values(this.aesthetic));
-        }
     };
 
     Scale.prototype.defaultDomain = function (values) {
