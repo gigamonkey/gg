@@ -23,26 +23,21 @@
      * Return a function that will render the graphic using the given
      * data into the given HTML element (a div or span usually).
      */
-    Graphic.prototype.renderer = function (where, opts) {
+    Graphic.prototype.render = function (data, where, opts) {
         var w  = opts.width;
         var h  = opts.height;
         var pX = opts.paddingX || opts.padding;
         var pY = opts.paddingY || opts.padding;
 
-        function render (data) {
-            var svg = where.append('svg').attr('width', w).attr('height', h);
-            this.facet.render(0, 0, w, h, pX, pY, svg, data);
-            /*
-              var p = 12;
-              this.facet.render(0, 0, w/2, h/2, p, p, svg, data);
-              this.facet.render(w/2, 0, w/2, h/2, p, p, svg, data);
-              this.facet.render(0, h/2, w/2, h/2, p, p, svg, data);
-              this.facet.render(w/2, h/2, w/2, h/2, p, p, svg, data);
-            */
-
-        }
-
-        return _.bind(render, this);
+        var svg = where.append('svg').attr('width', w).attr('height', h);
+        this.facet.render(0, 0, w, h, pX, pY, svg, data);
+        /*
+          var p = 12;
+          this.facet.render(0, 0, w/2, h/2, p, p, svg, data);
+          this.facet.render(w/2, 0, w/2, h/2, p, p, svg, data);
+          this.facet.render(0, h/2, w/2, h/2, p, p, svg, data);
+          this.facet.render(w/2, h/2, w/2, h/2, p, p, svg, data);
+        */
     };
 
 
@@ -884,9 +879,7 @@
             layers: _.filter(arguments, function (x) { return _.has(x, 'geometry'); }),
             scales: _.filter(arguments, function (x) { return _.has(x, 'aesthetic'); })
         });
-        return function (data, where, opts) {
-            graphic.renderer(where, opts)(data);
-        };
+        return function (data, where, opts) { graphic.render(data, where, opts); };
     };
 
 })(this);
