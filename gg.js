@@ -103,14 +103,14 @@
             .attr('class', 'x legend')
             .attr('transform', translate(x + (width / 2), y + (height - 5)))
             .append('text')
-            .text(this.legend(scales, 'x'))
+            .text(legend(scales, this.layers, 'x'))
             .attr('text-anchor', 'middle');
 
         svg.append('g')
             .attr('class', 'y legend')
             .attr('transform', translate(x + 10, y + (height / 2)) + ' rotate(270)')
             .append('text')
-            .text(this.legend(scales, 'y'))
+            .text(legend(scales, this.layers, 'y'))
             .attr('text-anchor', 'middle');
 
 
@@ -151,8 +151,8 @@
         return _.object(_.map(aesthetics, makeScale));
     };
 
-    Facet.prototype.legend = function (scales, aesthetic) {
-        return scales[aesthetic].legend || this.layers[0].legend(aesthetic);
+    function legend (scales, layers, aesthetic) {
+        return scales[aesthetic].legend || layers[0].legend(aesthetic);
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -202,7 +202,7 @@
         // just the single value returned by mapping the aesthetic to
         // the field in the data. For the BoxStatistic, however, it's
         // all the fields except for whatever the x aesthetic maps to.
-        return this.geometry.valuesForAesthetic(datum, aesthetic, this.mappings[aesthetic], this);
+        return this.geometry.valuesForAesthetic(datum, this.mappings[aesthetic], this);
     };
 
     /**
@@ -250,8 +250,8 @@
         }[spec.geometry || 'point'])(spec);
     };
 
-    Geometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
-        return [ datum[mapped] ];
+    Geometry.prototype.valuesForAesthetic = function (datum, field, layer) {
+        return [ datum[field] ];
     };
 
     function PointGeometry (spec) {
@@ -287,9 +287,9 @@
 
     AreaGeometry.prototype =  new Geometry();
 
-    AreaGeometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped, layer) {
-        return mapped
-            ? [ datum[mapped] ]
+    AreaGeometry.prototype.valuesForAesthetic = function (datum, field, layer) {
+        return field
+            ? [ datum[field] ]
             : _.map(['y0', 'y1'], function (x) { return layer.dataValue(datum, x); })
     }
 
@@ -387,7 +387,7 @@
 
     BoxPlotGeometry.prototype = new Geometry();
 
-    BoxPlotGeometry.prototype.valuesForAesthetic = function (datum, aesthetic, mapped) {
+    BoxPlotGeometry.prototype.valuesForAesthetic = function (datum, mapped, layer) {
         return mapped
             ? [ datum[mapped] ]
             : _.values(_.omit(datum, ['group', 'outliers'])).concat(datum.outliers);
@@ -752,9 +752,9 @@
     };
 
     function BoxPlotStatistic (spec) {
-        this.group = spec.group || false;
+        this.group         = spec.group || false;
         this.groupOrdering = spec.groupOrdering || function (x) { return x; };
-        this.variable = spec.variable || 'value';
+        this.variable      = spec.variable || 'value';
     }
 
     BoxPlotStatistic.prototype = new Statistic();
@@ -783,12 +783,13 @@
         //   max:      <the single maximum value>
         // }
 
-        var groups = splitByGroups(data, this.group, this.variable);
+        var groups   = groupData(data, this.group);
+        var variable = this.variable;
         var ordering = this.groupOrdering;
 
         return _.map(_.sortBy(_.pairs(groups), function (p) { return ordering(p[0]); }), function (g) {
             var name   = g[0];
-            var values = g[1];
+            var values = _.pluck(g[1], variable)
             values.sort(d3.ascending);
 
             var q1              = d3.quantile(values, 0.25);
@@ -816,7 +817,7 @@
                 max:      max
             };
             return r;
-        });
+        }, this);
     };
 
     function ArrowStatistic (spec) {
@@ -843,25 +844,7 @@
      * If groupBy is not defined returns the data nested as a single group.
      */
     function groupData(data, groupBy) {
-        // By default group the entire set together
-        if (_.isUndefined(groupBy) || _.isNull(groupBy)) return [data];
-        return _.groupBy(data, groupBy);
-    }
-
-    function splitByGroups (data, group, variable) {
-        var groups = {};
-        if (group) {
-            // Split values by group, if supplied.
-            _.each(data, function (d) {
-                var g = d[group];
-                if (! groups[g]) { groups[g] = []; }
-                groups[g].push(d[variable]);
-            }, this);
-        } else {
-            // Or put all data in one 'data' group.
-            groups['data'] = _.pluck(data, variable);
-        }
-        return groups;
+        return _.isUndefined(groupBy) ? { 'data': data } : _.groupBy(data, groupBy);
     }
 
     ////////////////////////////////////////////////////////////////////////
