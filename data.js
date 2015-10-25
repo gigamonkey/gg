@@ -140,7 +140,7 @@
 
         return _.map(_.range(2000), function () {
             var g = groups[Math.floor(Math.random() * groups.length)];
-            return { grade: g.name, value: g.rng() };
+            return { grade: g.name, score: g.rng() };
         });
     }());
 

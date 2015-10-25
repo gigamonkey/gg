@@ -165,16 +165,12 @@
         this.geometry  = Geometry.fromSpec(spec);
         this.group     = spec.group
         this.statistic = Statistic.fromSpec(spec.statistic);
-        var m1  = spec.mapping !== undefined ? spec.mapping : {};
         var m2 = {};
         _.each(this.geometry.aesthetics, function (a) {
+            // FIXME: This not a number business is a gross hack. This
+            // is where I wish we had symbols.
             if (a in spec && !_.isNumber(spec[a])) { m2[a] = spec[a] }
         }, this);
-        if (!_.isEqual(m1, m2)) {
-            console.log(spec);
-            console.log(m1);
-            console.log(m2);
-        }
         this.mappings = m2;
 
     }
@@ -372,6 +368,7 @@
     };
 
     function IntervalGeometry (spec) {
+        this.name = spec.name;
         this.width = spec.width || 5;
         this.color = spec.color || 'black';
     }
@@ -382,11 +379,12 @@
         var width = this.width;
 
         function scale (d, aesthetic) { return layer.aestheticValue(scales, d, aesthetic); }
-
+        if (this.name) g = g.attr('class', this.name);
         groups(g, 'rects', data).selectAll('rect')
             .data(Object)
             .enter()
             .append('rect')
+            .attr('class', 'bar')
             .attr('x', function (d) { return scale(d, 'x') - width/2; })
             .attr('y', function (d) { return scale(d, 'y'); })
             .attr('width', width)

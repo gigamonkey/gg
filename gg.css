@@ -83,3 +83,7 @@ path.line.d { stroke: #f0f; }
     fill-opacity: 0.5;
     r: 2;
 }
+
+.barchart rect.bar {
+    fill: blue;
+}

@@ -6,55 +6,55 @@
     // Define graphics ...
 
     var linechart = gg(
-        { geometry: 'line', x: 'd', y: 'r', group: 'subject', color: 'subject', mapping: { x: 'd', y: 'r', color: 'subject'} },
-        { geometry: 'text',  x: 'd', y: 'r', mapping: { x: 'd', y: 'r', }, text: '{d}, {r}', show: 'hover' },
+        { geometry: 'line', x: 'd', y: 'r', group: 'subject', color: 'subject' },
+        { geometry: 'text',  x: 'd', y: 'r', text: '{d}, {r}', show: 'hover' },
         { aesthetic: 'color', range: ['#CFF09E', '#A8DBA8', '#79BD9A', '#3B8686'] });
+
     var combined = gg(
-        { geometry: 'point', x: 'd', y: 'r', mapping: { x: 'd', y: 'r' }, size: 3 },
-        { geometry: 'line', x: 'd', y: 'r', mapping: { x: 'd', y: 'r' } });
+        { geometry: 'point', x: 'd', y: 'r', size: 3 },
+        { geometry: 'line', x: 'd', y: 'r' });
 
     var barchart = gg(
-        { geometry: 'interval', x: 'd', y: 'r', mapping: { x: 'd', y: 'r' }, /*color: 'blue',*/ width: 2 },
+        { geometry: 'interval', x: 'd', y: 'r', width: 2, name: 'barchart' },
         { aesthetic: 'y', min: 0 });
 
     var quadrants = gg(
-        { geometry: 'point', x: 'x', y: 'y', size: 'size', mapping: { x: 'x', y: 'y', size: 'size' } },
-        { geometry: 'text', x: 'x', y: 'y', mapping: { x: 'x', y: 'y' }, text: '{name}: {size}',  show: 'hover' },
+        { geometry: 'point', x: 'x', y: 'y', size: 'size' },
+        { geometry: 'text', x: 'x', y: 'y', text: '{name}: {size}',  show: 'hover' },
         { aesthetic: 'size', range: [ 1, 5 ]});
 
     var histogram = gg(
-        { geometry: 'interval', x: 'group', y: 'count', color: 'group', mapping: { x: 'group', y: 'count', color: 'group' }, width: 20, statistic: { kind: 'sum', group: 'who', variable: 'purchases' } },
+        { geometry: 'interval', x: 'group', y: 'count', color: 'group', width: 20, statistic: { kind: 'sum', group: 'who', variable: 'purchases' } },
         { aesthetic: 'x', type: 'categorical' },
         { aesthetic: 'y', min: 0 });
 
     var semilog = gg(
-        { geometry: 'point', x: 'd', y: 'r', mapping: { x: 'd', y: 'r' }, size: 3 },
-        { geometry: 'line', x: 'd', y: 'r', mapping: { x: 'd', y: 'r' } },
+        { geometry: 'point', x: 'd', y: 'r', size: 3 },
+        { geometry: 'line', x: 'd', y: 'r' },
         { aesthetic: 'y', type: 'log', legend: 'whatever' },
         { aesthetic: 'x', legend: 'foo' });
 
     var heightHistogram = gg(
-        { geometry: 'interval', x: 'bin', y: 'count', mapping: { x: 'bin', y: 'count' }, statistic: { kind: 'bin', variable: 'height', bins: 30 }},
+        { geometry: 'interval', x: 'bin', y: 'count', statistic: { kind: 'bin', variable: 'height', bins: 30 }},
         { aesthetic: 'x', type: 'categorical' },
         { aesthetic: 'y', min: 0 });
 
     var twoPopulations = gg(
-        { geometry: 'point', x: 'intelligence', y: 'wisdom', color: 'group', name: 'twoPopulations', mapping: { x: 'intelligence', y: 'wisdom', color: 'group' }});
+        { geometry: 'point', x: 'intelligence', y: 'wisdom', color: 'group', name: 'twoPopulations' });
 
     var boxplot = gg(
-        //{ geometry: 'box', x: 'grade', y: 'value', orientation: 'vertical' }
-        { geometry: 'box', x: 'group', y: false, mapping: { x: 'group', y: false }, statistic: { kind: 'box', group: 'grade', variable: 'value' }},
+        { geometry: 'box', x: 'group', y: false, statistic: { kind: 'box', group: 'grade', variable: 'score' }},
         { aesthetic: 'x', type: 'categorical' });
 
     var symmetric = gg(
-        { geometry: 'line', x: 'd', y: 'r', mapping: { x: 'd', y: 'r' } },
+        { geometry: 'line', x: 'd', y: 'r' },
         { aesthetic: 'y', center: 0 });
 
     var areachartSmooth = gg(
-        { geometry: 'area', x: 'a', y: false, y0: 'top', y1: 'bottom', mapping: { x: 'a', y: false, y0: 'top', y1: 'bottom' }, smooth: true });
+        { geometry: 'area', x: 'a', y: false, y0: 'top', y1: 'bottom', smooth: true });
 
     var areachart = gg(
-        { geometry: 'area', x: 'a', y: false, y0: 'top', y1: 'bottom', mapping: { x: 'a', y: false, y0: 'top', y1: 'bottom' } });
+        { geometry: 'area', x: 'a', y: false, y0: 'top', y1: 'bottom' });
 
     // ... and render 'em
 
