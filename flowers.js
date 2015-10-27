@@ -22,14 +22,13 @@
             { geometry: 'line', x: 'x', y: 'y', smooth: true, width: 2 },
             {
                 geometry: 'arrow',
-                color: '#338',
                 x: 'x',
                 y: 'y',
-                linewidth: 1,
                 arrow: { length: 10, width: 3 },
-                statistic: 'arrow',
                 head: function (d) { return maxY(d); },
                 tail: function (d) { return { x: maxY(d).x, y: 0 }; },
+                color: '#338',
+                linewidth: 1,
             },
             { aesthetic: 'x', legend: label },
             { aesthetic: 'y', legend: 'Net productivity' }

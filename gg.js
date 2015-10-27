@@ -494,6 +494,7 @@
     }
 
     ArrowGeometry.prototype = new Geometry(['x', 'y']);
+    ArrowGeometry.prototype.defaultStatistic = 'arrow';
 
     ArrowGeometry.prototype.render = function (g, data, layer, scales) {
         var len       = this.arrowLength;
