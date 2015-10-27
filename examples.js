@@ -24,7 +24,7 @@
         { aesthetic: 'size', range: [ 1, 5 ]});
 
     var histogram = gg(
-        { geometry: 'interval', x: 'group', y: 'count', color: 'group', width: 20, statistic: { kind: 'sum', group: 'who', variable: 'purchases' } },
+        { geometry: 'interval', x: 'group', y: 'count', color: 'group', width: 20, statistic: 'sum', group: 'who', variable: 'purchases' },
         { aesthetic: 'x', type: 'categorical' },
         { aesthetic: 'y', min: 0 });
 
@@ -35,7 +35,7 @@
         { aesthetic: 'x', legend: 'foo' });
 
     var heightHistogram = gg(
-        { geometry: 'interval', x: 'bin', y: 'count', statistic: { kind: 'bin', variable: 'height', bins: 30 }},
+        { geometry: 'interval', x: 'bin', y: 'count', statistic: 'bin', variable: 'height', bins: 30 },
         { aesthetic: 'x', type: 'categorical' },
         { aesthetic: 'y', min: 0 });
 
@@ -43,7 +43,7 @@
         { geometry: 'point', x: 'intelligence', y: 'wisdom', color: 'group', name: 'twoPopulations' });
 
     var boxplot = gg(
-        { geometry: 'box', x: 'group', y: false, statistic: { kind: 'box', group: 'grade', variable: 'score' }},
+        { geometry: 'box', x: 'group', group: 'grade', variable: 'score' },
         { aesthetic: 'x', type: 'categorical' });
 
     var symmetric = gg(
@@ -51,10 +51,10 @@
         { aesthetic: 'y', center: 0 });
 
     var areachartSmooth = gg(
-        { geometry: 'area', x: 'a', y: false, y0: 'top', y1: 'bottom', smooth: true });
+        { geometry: 'area', x: 'a', y0: 'top', y1: 'bottom', smooth: true });
 
     var areachart = gg(
-        { geometry: 'area', x: 'a', y: false, y0: 'top', y1: 'bottom' });
+        { geometry: 'area', x: 'a', y0: 'top', y1: 'bottom' });
 
     // ... and render 'em
 

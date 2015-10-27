@@ -61,3 +61,6 @@ div#examples span { margin: 3px; }
     fill: #88f;
     stroke-width: 1px;
 }*/
+
+
+.lines .line { stroke: #338; }

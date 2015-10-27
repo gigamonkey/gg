@@ -19,18 +19,17 @@
 
     function plotter(label) {
         return gg(
-            { geometry: 'line', mapping: { x: 'x', y: 'y' }, smooth: true, width: 2, color: '#338'},
+            { geometry: 'line', x: 'x', y: 'y', smooth: true, width: 2 },
             {
                 geometry: 'arrow',
                 color: '#338',
-                mapping: { x: 'x', y: 'y' },
+                x: 'x',
+                y: 'y',
                 linewidth: 1,
                 arrow: { length: 10, width: 3 },
-                statistic: {
-                    kind: 'arrow',
-                    head: function (d) { return maxY(d); },
-                    tail: function (d) { return { x: maxY(d).x, y: 0 }; }
-                }
+                statistic: 'arrow',
+                head: function (d) { return maxY(d); },
+                tail: function (d) { return { x: maxY(d).x, y: 0 }; },
             },
             { aesthetic: 'x', legend: label },
             { aesthetic: 'y', legend: 'Net productivity' }

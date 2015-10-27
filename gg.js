@@ -164,15 +164,21 @@
     function Layer (spec) {
         this.geometry  = Geometry.fromSpec(spec);
         this.group     = spec.group
-        this.statistic = Statistic.fromSpec(spec.statistic);
-        var m2 = {};
-        _.each(this.geometry.aesthetics, function (a) {
-            // FIXME: This not a number business is a gross hack. This
-            // is where I wish we had symbols.
-            if (a in spec && !_.isNumber(spec[a])) { m2[a] = spec[a] }
-        }, this);
-        this.mappings = m2;
-
+        this.statistic = Statistic.fromSpec(spec, this.geometry);
+        this.mappings = _.object(_.without(_.map(this.geometry.aesthetics, function (a) {
+            if (a in spec) {
+                // This is where I wish we had first-class symbols
+                // with a nice syntax. This means that any literal
+                // values for things that could come from mappings
+                // need to be specially encoded if their natural
+                // representation is a as a string. So far color seems
+                // like the only thing and maybe that can always be
+                // done via CSS.
+                return _.isString(spec[a]) ? [ a, spec[a] ] : null;
+            } else {
+                return [ a, false ]
+            }
+        }, this), null));
     }
 
     /**
@@ -192,7 +198,7 @@
      * the default value.
      */
     Layer.prototype.attributeValue = function (scales, aesthetic, defaultValue) {
-        return (aesthetic in this.mappings) ?
+        return (this.mappings[aesthetic]) ?
             _.bind(function (d) { return this.aestheticValue(scales, d, aesthetic); }, this) : defaultValue;
     }
 
@@ -246,6 +252,7 @@
 
     function Geometry (aesthetics) {
         this.aesthetics = aesthetics;
+        this.defaultStatistic = 'identity'
     }
 
     Geometry.fromSpec = function (spec) {
@@ -344,7 +351,7 @@
         // Can't use attributeValue here like the other geometries
         // because we always group the data and then turn each group
         // into a single array to be used to draw a polyline.
-        var color = ('color' in layer.mappings) ? function (d) { return scale(d[0], 'color'); } : this.color;
+        var color = layer.mappings.color ? function (d) { return scale(d[0], 'color'); } : this.color;
 
         function classname (d) {
             var g = layer.dataValue(d[0], 'group');
@@ -398,6 +405,7 @@
     }
 
     BoxPlotGeometry.prototype = new Geometry(['x', 'y']);
+    BoxPlotGeometry.prototype.defaultStatistic = 'box';
 
     BoxPlotGeometry.prototype.valuesForAesthetic = function (datum, mapped, layer) {
         return mapped
@@ -699,14 +707,14 @@
 
     function Statistic () {}
 
-    Statistic.fromSpec = function (spec) {
+    Statistic.fromSpec = function (spec, geometry) {
         return new ({
             identity: IdentityStatistic,
             bin:      BinStatistic,
             box:      BoxPlotStatistic,
             arrow:    ArrowStatistic,
             sum:      SumStatistic
-        }[spec ? spec.kind : 'identity'])(spec);
+        }[spec.statistic || geometry.defaultStatistic])(spec, geometry);
     };
 
     function IdentityStatistic () {}
@@ -740,7 +748,7 @@
         });
     };
 
-    function SumStatistic (spec) {
+    function SumStatistic (spec, geometry) {
         this.group    = spec.group || false;
         this.variable = spec.variable;
     }
@@ -766,7 +774,7 @@
     function BoxPlotStatistic (spec) {
         this.group         = spec.group || false;
         this.groupOrdering = spec.groupOrdering || function (x) { return x; };
-        this.variable      = spec.variable || 'value';
+        this.variable      = spec.variable || false;
     }
 
     BoxPlotStatistic.prototype = new Statistic();
@@ -801,7 +809,7 @@
 
         return _.map(_.sortBy(_.pairs(groups), function (p) { return ordering(p[0]); }), function (g) {
             var name   = g[0];
-            var values = _.pluck(g[1], variable)
+            var values = variable ? _.pluck(g[1], variable) : g[1];
             values.sort(d3.ascending);
 
             var q1              = d3.quantile(values, 0.25);
