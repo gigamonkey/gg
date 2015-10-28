@@ -56,11 +56,17 @@
     var areachart = gg(
         { geometry: 'area', x: 'a', y0: 'top', y1: 'bottom' });
 
+    var facets = gg(
+        { facets: 'xy', x: 'gender', y: 'job' },
+        { geometry: 'point', x: 'experience', y: 'pay', size: 2 }
+    );
+
     // ... and render 'em
 
     var data = gg.sampleData;
     var div  = d3.select('#examples');
     var opts = { width: 300, height: 200, padding: 35 };
+    var wide = { width: 930, height: 400, padding: 15 };
 
     linechart(data.upwardSubjects, div, opts);
     combined(data.upward, div, opts);
@@ -74,5 +80,6 @@
     symmetric(data.toBeCentered, div, opts);
     areachartSmooth(data.upwardPairs, div, opts);
     areachart(data.upwardPairs, div, opts);
+    facets(data.facets, div, wide);
 
 })();

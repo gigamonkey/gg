@@ -188,5 +188,54 @@
         });
     }());
 
+    gg.sampleData.facets = (function () {
+
+        function choice (list) {
+            return function () { return list[Math.floor(Math.random() * list.length)]; }
+        }
+
+        var gender = choice(['Male', 'Female']);
+        var job    = choice(['Programmer', 'Manager', 'Designer']);
+
+        var pay = {
+            Male: {
+                Programmer: d3.random.normal(30, 5),
+                Manager: d3.random.normal(50, 10),
+                Designer: d3.random.normal(20, 5)
+            },
+            Female: {
+                Programmer: d3.random.normal(25, 4),
+                Manager: d3.random.normal(40, 12),
+                Designer: d3.random.normal(20, 6)
+            }
+        }
+
+        var experience = {
+            Male: {
+                Programmer: d3.random.normal(10, 3),
+                Manager: d3.random.normal(15, 5),
+                Designer: d3.random.normal(5, 2)
+            },
+            Female: {
+                Programmer: d3.random.normal(7, 4),
+                Manager: d3.random.normal(10, 4),
+                Designer: d3.random.normal(6, 3)
+            }
+        }
+
+        return _.map(_.range(1000), function () {
+            var g = gender();
+            var j = job();
+            var e = Math.max(1, experience[g][j]());
+            var p = Math.max(5, pay[g][j]()) * e;
+
+            return {
+                gender: g,
+                job: j,
+                pay: p,
+                experience: e
+            }
+        });
+    }());
 
 })(window);

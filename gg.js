@@ -14,9 +14,7 @@
     // statistical graphic.
 
     function Graphic (spec) {
-        var layers     = _.map(spec.layers, function (s) { return new Layer(s); });
-        var aesthetics = _.uniq(_.flatten(_.map(_.pluck(layers, 'mappings'), _.keys)));
-        this.facet = new Facet(layers, spec.scales, aesthetics);
+        this.facet = Facet.fromSpec(spec);
     }
 
     /*
@@ -59,18 +57,34 @@
     // actually implemented yet except the trivial single facet case.
     // -Peter)
 
-    function Facet(layers, scaleSpecs, aesthetics) {
-        this.layers     = layers;
-        this.scaleSpecs = scaleSpecs;
-        this.aesthetics = aesthetics;
+    function Facet() {}
+
+    Facet.fromSpec = function (spec) {
+        return new ({
+            single: SingleFacet,
+            xy: XYFacet
+        }[spec.facets ? spec.facets.facets : 'single'])(spec);
     }
 
-    Facet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
+    Facet.makeLayers = function (spec) {
+        return _.map(spec.layers, function (s) { return new Layer(s); });
+    }
+    Facet.extractAesthetics = function (layers) {
+        return _.uniq(_.flatten(_.map(_.pluck(layers, 'mappings'), _.keys)));
+    }
+
+    function SingleFacet(spec) {
+        this.layers     = Facet.makeLayers(spec);
+        this.scaleSpecs = spec.scales;
+        this.aesthetics = Facet.extractAesthetics(this.layers);
+    }
+
+    SingleFacet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data, scaleData) {
 
         function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
         function g () { return svg.append('g').attr('transform', translate(x, y)); }
 
-        var scales = makeScales(this.scaleSpecs, this.layers, this.aesthetics, data, width, height, paddingX, paddingY);
+        var scales = makeScales(this.scaleSpecs, this.layers, this.aesthetics, scaleData || data, width, height, paddingX, paddingY);
 
         svg.append('rect')
             .attr('class', 'base')
@@ -116,6 +130,41 @@
 
         _.each(this.layers, function (l) { l.render(g(), data, scales); }, this);
     };
+
+
+    function XYFacet(spec) {
+        this.spec = spec;
+        this.x    = spec.facets.x;
+        this.y    = spec.facets.y;
+    }
+
+    XYFacet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
+
+        var xs = _.uniq(_.pluck(data, this.x));
+        var ys = _.uniq(_.pluck(data, this.y));
+
+        var subWidth  = Math.floor((width - (paddingX * (xs.length - 1))) / xs.length);
+        var subHeight = Math.floor((height - (paddingY * (ys.length - 1))) / ys.length);
+
+        var byX = _.bind(function (xs) { return _.groupBy(xs, this.x); }, this);
+        var byY = _.bind(function (xs) { return _.sortBy(_.pairs(_.groupBy(xs, this.y)), function (x) { return x[0]; }); }, this);
+
+        var grouped = _.sortBy(_.pairs(_.mapObject(byX(data), byY)), function (x) { return x[0]; });
+
+        var subfacet = new SingleFacet(this.spec);
+
+        _.each(grouped, function (xvalue, xindex) {
+            var xlabel = xvalue[0];
+            _.each(xvalue[1], function (yvalue, yindex) {
+                var ylabel = yvalue[0];
+                var facetdata = yvalue[1];
+                console.log(xlabel + ' / ' + ylabel + ' (' + xindex + ', ' + yindex + ')');
+                subfacet.render(xindex * subWidth, yindex * subHeight, subWidth, subHeight, paddingX, paddingY, svg, facetdata, data);
+            });
+        });
+    };
+
+
 
 
     /*
@@ -878,6 +927,7 @@
      */
     exports.gg = function gg () {
         var graphic = new Graphic({
+            facets:  _.find(arguments, function (x) { return _.has(x, 'facets'); }),
             layers: _.filter(arguments, function (x) { return _.has(x, 'geometry'); }),
             scales: _.filter(arguments, function (x) { return _.has(x, 'aesthetic'); })
         });
