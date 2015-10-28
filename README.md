@@ -24,5 +24,5 @@ Some ideas of things to do next:
 - In-browser interactive graphic builder. (REPL?)
 
 
-*This project started life as a Hack Week project at Etsy. I’m no longer there but if you want to hack data or something else at Etsy, they’re probably still hiring? See
+*This project started life as a Hack Week project at Etsy. I’m no longer there but if you want to hack data or something else at Etsy, they’re probably still hiring. See
  [http://www.etsy.com/careers/](http://www.etsy.com/careers/)*
