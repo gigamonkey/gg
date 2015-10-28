@@ -140,6 +140,8 @@
 
     XYFacet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
 
+        function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
+
         var xs = _.uniq(_.pluck(data, this.x));
         var ys = _.uniq(_.pluck(data, this.y));
 
@@ -156,10 +158,31 @@
         _.each(grouped, function (xvalue, xindex) {
             var xlabel = xvalue[0];
             _.each(xvalue[1], function (yvalue, yindex) {
-                var ylabel = yvalue[0];
+                var ylabel    = yvalue[0];
                 var facetdata = yvalue[1];
-                console.log(xlabel + ' / ' + ylabel + ' (' + xindex + ', ' + yindex + ')');
                 subfacet.render(xindex * subWidth, yindex * subHeight, subWidth, subHeight, paddingX, paddingY, svg, facetdata, data);
+            });
+        });
+
+        _.each(grouped, function (xvalue, xindex) {
+            var xlabel = xvalue[0];
+            var xcoord = (xindex * subWidth) + subWidth/2;
+            svg.append('g')
+                .attr('class', 'x facet label')
+                .attr('transform', translate(xcoord, 20))
+                .append('text')
+                .text(xlabel)
+                .attr('text-anchor', 'middle');
+            _.each(xvalue[1], function (yvalue, yindex) {
+                var ylabel = yvalue[0];
+                var xcoord = width - paddingX - 20;
+                var ycoord = (yindex * subHeight) + subHeight/2;
+                svg.append('g')
+                    .attr('class', 'x facet label')
+                    .attr('transform', translate(xcoord, ycoord) + ' rotate(270)')
+                    .append('text')
+                    .text(ylabel)
+                    .attr('text-anchor', 'middle');
             });
         });
     };
