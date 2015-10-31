@@ -146,8 +146,8 @@
         var labelHeight = 20;
         var labelWidth  = 20;
 
-        var subWidth  = Math.floor((width - (paddingX * (xs.length - 1))) / xs.length);
-        var subHeight = Math.floor((height - (paddingY * (ys.length - 1))) / ys.length);
+        var subWidth  = Math.floor((width - labelWidth) / xs.length);
+        var subHeight = Math.floor((height - labelHeight) / ys.length);
         var subfacet = new SingleFacet(this.spec);
 
         // The big rect.
@@ -163,7 +163,7 @@
             _.each(ys, function (y, yindex) {
                 subfacet.render(
                     xindex * subWidth,
-                    20 + yindex * subHeight,
+                    labelHeight + yindex * subHeight,
                     subWidth,
                     subHeight,
                     paddingX,
@@ -182,7 +182,7 @@
                 .attr('x', xindex * subWidth)
                 .attr('y', 0)
                 .attr('width', subWidth)
-                .attr('height', 20);
+                .attr('height', labelHeight);
             svg.append('g')
                 .attr('class', 'x facet label')
                 .attr('transform', translate(xcoord, 15))
@@ -193,17 +193,17 @@
 
         // Draw Y facet labels
         _.each(ys, function (ylabel, yindex) {
-            var xcoord = width - 20;
-            var ycoord = 20 + (yindex * subHeight) + subHeight/2;
+            var xcoord = width - labelWidth;
+            var ycoord = labelHeight + (yindex * subHeight) + subHeight/2;
             svg.append('rect')
                 .attr('class', 'y facet label')
-                .attr('x', width - paddingX - 1)
-                .attr('y', 20 + (yindex * subHeight))
-                .attr('width', 20)
+                .attr('x', xcoord)
+                .attr('y', labelHeight + (yindex * subHeight))
+                .attr('width', labelWidth)
                 .attr('height', subHeight);
             svg.append('g')
                 .attr('class', 'y facet label')
-                .attr('transform', translate(xcoord, ycoord) + ' rotate(270)')
+                .attr('transform', translate(xcoord + (labelWidth * .75), ycoord) + ' rotate(270)')
                 .append('text')
                 .text(ylabel)
                 .attr('text-anchor', 'middle');

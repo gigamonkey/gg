@@ -66,7 +66,7 @@
     var data = gg.sampleData;
     var div  = d3.select('#examples');
     var opts = { width: 300, height: 200, padding: 35 };
-    var wide = { width: 928, height: 600, paddingX: 35, paddingY: 20 };
+    var wide = { width: 915, height: 600, paddingX: 35, paddingY: 20 };
 
     linechart(data.upwardSubjects, div, opts);
     combined(data.upward, div, opts);
