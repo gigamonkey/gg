@@ -11,6 +11,7 @@ h1 {
 
 rect.base { fill: rgba(221, 204, 187, 1); }
 
+rect.facet.label { fill: rgba(255, 204, 187, .5);}
 
 rect.boxplot {
     fill: none;

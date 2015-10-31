@@ -81,7 +81,6 @@
 
     SingleFacet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data, scaleData) {
 
-        function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
         function g () { return svg.append('g').attr('transform', translate(x, y)); }
 
         var scales = makeScales(this.scaleSpecs, this.layers, this.aesthetics, scaleData || data, width, height, paddingX, paddingY);
@@ -140,55 +139,76 @@
 
     XYFacet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
 
-        function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
+        var xs      = _.sortBy(_.uniq(_.pluck(data, this.x)), function (x) { return x; });
+        var ys      = _.sortBy(_.uniq(_.pluck(data, this.y)), function (y) { return y; });
+        var grouped = _.mapObject(_.groupBy(data, this.x), _.bind(function (ds) { return _.groupBy(ds, this.y); }, this))
 
-        var xs = _.uniq(_.pluck(data, this.x));
-        var ys = _.uniq(_.pluck(data, this.y));
+        var labelHeight = 20;
+        var labelWidth  = 20;
 
         var subWidth  = Math.floor((width - (paddingX * (xs.length - 1))) / xs.length);
         var subHeight = Math.floor((height - (paddingY * (ys.length - 1))) / ys.length);
-
-        var byX = _.bind(function (xs) { return _.groupBy(xs, this.x); }, this);
-        var byY = _.bind(function (xs) { return _.sortBy(_.pairs(_.groupBy(xs, this.y)), function (x) { return x[0]; }); }, this);
-
-        var grouped = _.sortBy(_.pairs(_.mapObject(byX(data), byY)), function (x) { return x[0]; });
-
         var subfacet = new SingleFacet(this.spec);
 
-        _.each(grouped, function (xvalue, xindex) {
-            var xlabel = xvalue[0];
-            _.each(xvalue[1], function (yvalue, yindex) {
-                var ylabel    = yvalue[0];
-                var facetdata = yvalue[1];
-                subfacet.render(xindex * subWidth, yindex * subHeight, subWidth, subHeight, paddingX, paddingY, svg, facetdata, data);
+        // The big rect.
+        svg.append('rect')
+            .attr('class', 'base')
+            .attr('x', x)
+            .attr('y', y)
+            .attr('width', width)
+            .attr('height', height);
+
+        // Draw sub-facets
+        _.each(xs, function (x, xindex) {
+            _.each(ys, function (y, yindex) {
+                subfacet.render(
+                    xindex * subWidth,
+                    20 + yindex * subHeight,
+                    subWidth,
+                    subHeight,
+                    paddingX,
+                    paddingY,
+                    svg,
+                    grouped[x][y],
+                    data);
             });
         });
 
-        _.each(grouped, function (xvalue, xindex) {
-            var xlabel = xvalue[0];
+        // Draw X facet labels
+        _.each(xs, function (xlabel, xindex) {
             var xcoord = (xindex * subWidth) + subWidth/2;
+            svg.append('rect')
+                .attr('class', 'x facet label')
+                .attr('x', xindex * subWidth)
+                .attr('y', 0)
+                .attr('width', subWidth)
+                .attr('height', 20);
             svg.append('g')
                 .attr('class', 'x facet label')
-                .attr('transform', translate(xcoord, 20))
+                .attr('transform', translate(xcoord, 15))
                 .append('text')
                 .text(xlabel)
                 .attr('text-anchor', 'middle');
-            _.each(xvalue[1], function (yvalue, yindex) {
-                var ylabel = yvalue[0];
-                var xcoord = width - paddingX - 20;
-                var ycoord = (yindex * subHeight) + subHeight/2;
-                svg.append('g')
-                    .attr('class', 'x facet label')
-                    .attr('transform', translate(xcoord, ycoord) + ' rotate(270)')
-                    .append('text')
-                    .text(ylabel)
-                    .attr('text-anchor', 'middle');
-            });
+        });
+
+        // Draw Y facet labels
+        _.each(ys, function (ylabel, yindex) {
+            var xcoord = width - 20;
+            var ycoord = 20 + (yindex * subHeight) + subHeight/2;
+            svg.append('rect')
+                .attr('class', 'y facet label')
+                .attr('x', width - paddingX - 1)
+                .attr('y', 20 + (yindex * subHeight))
+                .attr('width', 20)
+                .attr('height', subHeight);
+            svg.append('g')
+                .attr('class', 'y facet label')
+                .attr('transform', translate(xcoord, ycoord) + ' rotate(270)')
+                .append('text')
+                .text(ylabel)
+                .attr('text-anchor', 'middle');
         });
     };
-
-
-
 
     /*
      * Make the scales to render a specific data set.
@@ -939,6 +959,8 @@
     function groupData(data, groupBy) {
         return _.isUndefined(groupBy) ? { 'data': data } : _.groupBy(data, groupBy);
     }
+
+    function translate(x, y) { return 'translate(' + x + ',' + y + ')'; }
 
     ////////////////////////////////////////////////////////////////////////
     // API
