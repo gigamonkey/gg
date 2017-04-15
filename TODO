@@ -1,0 +1,5 @@
+- Decide whether it's better to just use CSS for anything that can be
+  controlled by CSS or to have ways to specify relevant appearance
+  parameters in the graphics spec.
+
+- Come up with syntax for facets.
