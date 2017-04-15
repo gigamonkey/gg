@@ -73,17 +73,7 @@
         return _.uniq(_.flatten(_.map(_.pluck(layers, 'mappings'), _.keys)));
     }
 
-    function SingleFacet(spec) {
-        this.layers     = Facet.makeLayers(spec);
-        this.scaleSpecs = spec.scales;
-        this.aesthetics = Facet.extractAesthetics(this.layers);
-    }
-
-    SingleFacet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data, scaleData) {
-
-        function g () { return svg.append('g').attr('transform', translate(x, y)); }
-
-        var scales = makeScales(this.scaleSpecs, this.layers, this.aesthetics, scaleData || data, width, height, paddingX, paddingY);
+    Facet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data, scaleData) {
 
         svg.append('rect')
             .attr('class', 'base')
@@ -91,6 +81,23 @@
             .attr('y', y)
             .attr('width', width)
             .attr('height', height);
+
+        this.subrender(x, y, width, height, paddingX, paddingY, svg, data, scaleData);
+    };
+
+    function SingleFacet(spec) {
+        this.layers     = Facet.makeLayers(spec);
+        this.scaleSpecs = spec.scales;
+        this.aesthetics = Facet.extractAesthetics(this.layers);
+    }
+
+    SingleFacet.prototype = new Facet();
+
+    SingleFacet.prototype.subrender = function (x, y, width, height, paddingX, paddingY, svg, data, scaleData) {
+
+        function g () { return svg.append('g').attr('transform', translate(x, y)); }
+
+        var scales = makeScales(this.scaleSpecs, this.layers, this.aesthetics, scaleData || data, width, height, paddingX, paddingY);
 
         var xAxis = d3.svg.axis()
             .scale(scales['x'].d3Scale)
@@ -130,14 +137,15 @@
         _.each(this.layers, function (l) { l.render(g(), data, scales); }, this);
     };
 
-
     function XYFacet(spec) {
         this.spec = spec;
         this.x    = spec.facets.x;
         this.y    = spec.facets.y;
     }
 
-    XYFacet.prototype.render = function (x, y, width, height, paddingX, paddingY, svg, data) {
+    XYFacet.prototype = new Facet();
+
+    XYFacet.prototype.subrender = function (x, y, width, height, paddingX, paddingY, svg, data) {
 
         var xs      = _.sortBy(_.uniq(_.pluck(data, this.x)), function (x) { return x; });
         var ys      = _.sortBy(_.uniq(_.pluck(data, this.y)), function (y) { return y; });
@@ -150,18 +158,10 @@
         var subHeight = Math.floor((height - labelHeight) / ys.length);
         var subfacet = new SingleFacet(this.spec);
 
-        // The big rect.
-        svg.append('rect')
-            .attr('class', 'base')
-            .attr('x', x)
-            .attr('y', y)
-            .attr('width', width)
-            .attr('height', height);
-
         // Draw sub-facets
         _.each(xs, function (x, xindex) {
             _.each(ys, function (y, yindex) {
-                subfacet.render(
+                subfacet.subrender(
                     xindex * subWidth,
                     labelHeight + yindex * subHeight,
                     subWidth,
@@ -184,9 +184,9 @@
                 .attr('width', subWidth)
                 .attr('height', labelHeight);
             svg.append('g')
-                .attr('class', 'x facet label')
                 .attr('transform', translate(xcoord, 15))
                 .append('text')
+                .attr('class', 'x facet label')
                 .text(xlabel)
                 .attr('text-anchor', 'middle');
         });
@@ -202,9 +202,9 @@
                 .attr('width', labelWidth)
                 .attr('height', subHeight);
             svg.append('g')
-                .attr('class', 'y facet label')
                 .attr('transform', translate(xcoord + (labelWidth * .75), ycoord) + ' rotate(270)')
                 .append('text')
+                .attr('class', 'y facet label')
                 .text(ylabel)
                 .attr('text-anchor', 'middle');
         });
