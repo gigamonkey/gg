@@ -5,7 +5,7 @@ Javascript DSL for The Grammar of Graphics.
 
 See a demo here:
 
-> [http://gigamonkey.github.com/gg/](http://gigamonkey.github.com/gg/)
+> [http://gigamonkey.github.io/gg/](http://gigamonkey.github.io/gg/)
 
 Some ideas of things to do next:
 
